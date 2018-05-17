@@ -4,11 +4,17 @@
 from selenium.webdriver.phantomjs.webdriver import WebDriver
 from selenium.common.exceptions import NoSuchElementException
 from flask import Flask
+from subprocess import Popen
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.ext.automap import automap_base
+from sqlalchemy_seed import load_fixture_files, load_fixtures
+import yaml
 
 from exceptions import NotInitializedError
+from eztesterclient import EZTesterClient
 
 
 class EZTester(object):
@@ -28,21 +34,33 @@ class EZTester(object):
     def __init__(self):
         object.__init__(self)
         self.initialized = False
-        self.sel_client = None  # Will be instantiated in start_selenium_driver()
         self.css_selector = '_eztestid'  # Default
-        self.tables = None
+        self.fixtures_dir = './fixtures'  # Default
+        self.db_session = None
+        self.eztestids = dict()
+        self.flask_app = None
+        self.flask_app_name = None
+        self.flask_app_proc = None
 
-    def init_app_and_db(self, flask_app, sqlalchemy_db):
+    def init_app_and_db(self, flask_app, flask_app_name, sqlalchemy_db):
         if not isinstance(flask_app, Flask):
             raise TypeError("flask_app argument to init_app_and_db must be a Flask app.")
+        if type(flask_app_name) is not str:
+            raise TypeError("flask_app_name argument to init_app_and_db must be a string.")
         if not isinstance(sqlalchemy_db, SQLAlchemy):
             raise TypeError("sqlalchemy_db argument to init_app_and_db must be an SQLAlchemy instance.")
         if not flask_app.extensions.get('sqlalchemy'):
             sqlalchemy_db.init_app(flask_app)
 
-        # Reflect the current database schema
-        # with flask_app.app_context():
-        #     self.tables = MetaData().reflect(sqlalchemy_db.engine).tables
+        self.flask_app = flask_app
+        self.flask_app_name = flask_app_name
+
+        self.db_session = scoped_session(sessionmaker(autoflush=False, autocommit=False, bind=sqlalchemy_db.engine))
+
+        if flask_app.config.get('EZTEST_FIXTURES_DIR'):
+            self.fixtures_dir = flask_app.config.get('EZTEST_FIXTURES_DIR')
+
+        # else user should call reister_model_classes function for fixtures
 
         # TODO: Look at flask_app.config
 
@@ -52,14 +70,47 @@ class EZTester(object):
 
         self.initialized = True
 
-    def start_selenium_driver(self):
-        if not self.initialized:
-            raise NotInitializedError()
-        self.sel_client = WebDriver()
-        self.sel_client.implicitly_wait(self.DEFAULT_SELENIUM_WAIT_TIME)
+    def get_client_after_loading_fixture(self, fixture_name, fix_dir=None):
+        if fix_dir is None:
+            fix_dir = self.fixtures_dir
+
+        fixtures = load_fixture_files(fix_dir, [fixture_name+'.yaml'])
+        load_fixtures(self.db_session, fixtures)
+
+        with open('%s/%s.yaml' % (fix_dir, fixture_name)) as stream:
+            models = yaml.load(stream)
+        self.parse_eztestids_from_models(models)
+
+        client = EZTesterClient(self.eztestids, self.css_selector)
+        return client
 
     def assert_ele_exists(self, ele_id):
         try:
             self.sel_client.find_element_by_css_selector('[%s="%s"]' % (self.css_selector, ele_id))
         except NoSuchElementException:
             raise AssertionError("Did not find element with attribute %s=\"%s\"." % (self.css_selector, ele_id))
+
+    # Private Helpers
+
+    def startup_flask_app(self):
+        self.flask_app_proc = Popen(['flask', 'run'], env={'FLASK_APP': self.flask_app_name, 'PY_ENV': 'test'})
+
+    def kill_flask_app(self):
+        self.flask_app_proc.kill()
+
+    def parse_eztestids_from_models(self, models):
+        for (model_name, id_and_fields) in models.iteritems():
+            model_id = id_and_fields['id']
+            fields = id_and_fields['fields']
+            for (field_name, val) in fields.iteritems():
+                self.eztestids['%s[%d].%s' % (model_name, model_id, field_name)] = str(val)
+
+    def make_classes_for_reflected_tables(self):
+        with self.flask_app.app_context():
+            metadata = MetaData()
+            metadata.reflect(self.sqlalchemy_db.engine)
+            base = automap_base(metadata=metadata)
+            base.prepare()
+            return base.classes
+
+
