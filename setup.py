@@ -5,7 +5,8 @@ from setuptools import setup, find_packages
 requirements = [
     'Flask',
     'selenium',
-    'Flask-SQLAlchemy'
+    'Flask-SQLAlchemy',
+    'sqlalchemy_seed'
 ]
 
 description = "Flask test generation based on db models."
