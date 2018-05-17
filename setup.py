@@ -34,5 +34,10 @@ setup(
     long_description=long_description,
     install_requires=requirements,
     packages=find_packages(exclude=['test']),
-    classifiers=classifiers
+    classifiers=classifiers,
+    entry_points={
+        'console_scripts': [
+            'eztest = flaskeztest.__main__:flaskeztest_main'
+        ]
+    }
 )
