@@ -5,6 +5,7 @@ from selenium.webdriver.phantomjs.webdriver import WebDriver
 from selenium.common.exceptions import NoSuchElementException
 from flask import Flask
 from subprocess import Popen
+from os import getcwd
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
@@ -42,23 +43,23 @@ class EZTester(object):
         self.flask_app_name = None
         self.flask_app_proc = None
 
-    def init_app_and_db(self, flask_app, flask_app_name, sqlalchemy_db):
+    def init_app_and_db(self, flask_app, sqlalchemy_db):
         if not isinstance(flask_app, Flask):
             raise TypeError("flask_app argument to init_app_and_db must be a Flask app.")
-        if type(flask_app_name) is not str:
-            raise TypeError("flask_app_name argument to init_app_and_db must be a string.")
         if not isinstance(sqlalchemy_db, SQLAlchemy):
             raise TypeError("sqlalchemy_db argument to init_app_and_db must be an SQLAlchemy instance.")
         if not flask_app.extensions.get('sqlalchemy'):
             sqlalchemy_db.init_app(flask_app)
 
         self.flask_app = flask_app
-        self.flask_app_name = flask_app_name
 
-        self.db_session = scoped_session(sessionmaker(autoflush=False, autocommit=False, bind=sqlalchemy_db.engine))
+        with self.flask_app.app_context():
+            self.db_session = scoped_session(sessionmaker(autoflush=False, autocommit=False, bind=sqlalchemy_db.engine))
 
         if flask_app.config.get('EZTEST_FIXTURES_DIR'):
             self.fixtures_dir = flask_app.config.get('EZTEST_FIXTURES_DIR')
+        if flask_app.config.get('EZTEST_CSS_SELECTOR'):
+            self.css_selector = flask_app.config.get('EZTEST_CSS_SELECTOR')
 
         # else user should call reister_model_classes function for fixtures
 
@@ -71,6 +72,9 @@ class EZTester(object):
         self.initialized = True
 
     def get_client_after_loading_fixture(self, fixture_name, fix_dir=None):
+        if not self.initialized:
+            raise NotInitializedError()
+
         if fix_dir is None:
             fix_dir = self.fixtures_dir
 
@@ -99,9 +103,11 @@ class EZTester(object):
         self.flask_app_proc.kill()
 
     def parse_eztestids_from_models(self, models):
-        for (model_name, id_and_fields) in models.iteritems():
-            model_id = id_and_fields['id']
-            fields = id_and_fields['fields']
+        for model in models:
+            model_parts = model['model'].split('.')
+            model_name = model_parts[len(model_parts) - 1]
+            model_id = model['id']
+            fields = model['fields']
             for (field_name, val) in fields.iteritems():
                 self.eztestids['%s[%d].%s' % (model_name, model_id, field_name)] = str(val)
 

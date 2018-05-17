@@ -6,12 +6,12 @@ from selenium.common.exceptions import NoSuchElementException
 from unittest import TestCase
 
 
-class EZTesterClient(TestCase):
+class EZTesterClient(object):
 
     DEFAULT_WAIT_TIME = 1.5
 
     def __init__(self, eztestids, css_selector, implicit_wait_time=DEFAULT_WAIT_TIME):
-        TestCase.__init__(self)
+        object.__init__(self)
         self.eztestids = eztestids
         self.css_selector = css_selector
         self.implicit_wait_time = implicit_wait_time
@@ -34,12 +34,12 @@ class EZTesterClient(TestCase):
         try:
             self.driver.find_by_css_selector('[%s="%s"]' % (self.css_selector, eztestid))
         except NoSuchElementException:
-            self.fail("Element with eztestid: \"%s\" not found")
+            raise AssertionError("Element with eztestid: \"%s\" not found")
 
     def assert_has_correct_val(self, eztestid):
         expected_val = self.eztestids[eztestid]
         try:
             ele = self.driver.find_by_css_selector('[%s="%s"]' % (self.css_selector, eztestid))
         except NoSuchElementException:
-            self.fail("Element with eztestid: \"%s\" not found")
-        self.assertEqual(ele.text.strip(), expected_val)
+            raise AssertionError("Element with eztestid: \"%s\" not found")
+        assert (ele.text.strip() == expected_val)

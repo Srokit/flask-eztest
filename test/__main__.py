@@ -4,26 +4,17 @@ from unittest import TestCase, makeSuite, TextTestRunner
 from flask_sqlalchemy import SQLAlchemy
 
 from flaskeztest.eztester import EZTester
+from flaskeztest.__main__ import flaskeztest_main
 from app import app
 
-
-class FlaskEZTestTesCase(TestCase):
-
-    def setUp(self):
-        self.flask_app = app
-        self.sqlalchemy_db = SQLAlchemy()
-        self.eztester = EZTester()
-
-    def test_uninitialized(self):
-        self.assertFalse(self.eztester.initialized)
-
-    def test_initialization(self):
-        self.eztester.init_app_and_db(self.flask_app, self.sqlalchemy_db)
-        self.assertTrue(self.eztester.initialized)
+def runtests_explicitly():
+    flaskeztest_main(['test/app.py', 'test/testmod.py'])
 
 if __name__ == '__main__':
 
-    suite = makeSuite(FlaskEZTestTesCase)
-    runner = TextTestRunner()
+    runtests_explicitly()
 
-    runner.run(suite)
+    # suite = makeSuite(FlaskEZTestTesCase)
+    # runner = TextTestRunner()
+    #
+    # runner.run(suite)

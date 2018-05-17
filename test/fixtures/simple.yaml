@@ -1,13 +1,10 @@
-- model: Table1
+- model: model.Table1
   id: 1
   fields:
-    first_name: John
-    last_name: Lennon
-    age: 20
+    name: Stan
 
-- model: Table2
+- model: model.Table2
   id: 2
   fields:
-    first_name: Paul
-    last_name: McCartney
-    age: 21
+    name: Stan2
+    number: 3
