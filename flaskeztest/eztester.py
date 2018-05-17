@@ -5,6 +5,9 @@ from selenium.webdriver.phantomjs.webdriver import WebDriver
 from selenium.common.exceptions import NoSuchElementException
 from flask import Flask
 
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import MetaData
+
 from exceptions import NotInitializedError
 
 
@@ -27,13 +30,26 @@ class EZTester(object):
         self.initialized = False
         self.sel_client = None  # Will be instantiated in start_selenium_driver()
         self.css_selector = '_eztestid'  # Default
+        self.tables = None
 
-    def init_app(self, flask_app):
+    def init_app_and_db(self, flask_app, sqlalchemy_db):
         if not isinstance(flask_app, Flask):
-            raise TypeError("Argument to init_app must be a Flask app.")
+            raise TypeError("flask_app argument to init_app_and_db must be a Flask app.")
+        if not isinstance(sqlalchemy_db, SQLAlchemy):
+            raise TypeError("sqlalchemy_db argument to init_app_and_db must be an SQLAlchemy instance.")
+        if not flask_app.extensions.get('sqlalchemy'):
+            sqlalchemy_db.init_app(flask_app)
+
+        # Reflect the current database schema
+        # with flask_app.app_context():
+        #     self.tables = MetaData().reflect(sqlalchemy_db.engine).tables
+
         # TODO: Look at flask_app.config
-        # TODO: Setup self.css_selector from ['EZTEST_CSS_SELECTOR'] key
+
+        # TODO: Setup self.css_selector from config['EZTEST_CSS_SELECTOR'] key
+
         # TODO: Map seed data to eztestids by looking at sqlalchemy db schema
+
         self.initialized = True
 
     def start_selenium_driver(self):
