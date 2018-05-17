@@ -4,3 +4,6 @@
 env/
 # Mac OS
 .DS_Store
+
+# Setup tools stuff
+*.egg-info/

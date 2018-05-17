@@ -24,13 +24,13 @@ classifiers = [
 ]
 
 setup(
-    name='flask-eztest',
+    name='flaskeztest',
     version='0.1.0',
     author='Stanley Rokita',
     author_email='srok35@gmail.com',
     description=description,
     long_description=long_description,
-    install_requirements=requirements,
+    install_requires=requirements,
     packages=find_packages(exclude=['test']),
     classifiers=classifiers
 )
