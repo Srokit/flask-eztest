@@ -2,3 +2,5 @@
 .idea/
 # Virtual env
 env/
+# Mac OS
+.DS_Store

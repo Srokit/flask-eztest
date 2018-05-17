@@ -1,4 +1,4 @@
-"""Setup flask-testgen."""
+"""Setup flask-eztest."""
 
 from setuptools import setup, find_packages
 
@@ -24,7 +24,7 @@ classifiers = [
 ]
 
 setup(
-    name='flask-testgen',
+    name='flask-eztest',
     version='0.1.0',
     author='Stanley Rokita',
     author_email='srok35@gmail.com',
