@@ -32,14 +32,14 @@ class EZTesterClient(object):
 
     def assert_exists(self, eztestid):
         try:
-            self.driver.find_by_css_selector('[%s="%s"]' % (self.css_selector, eztestid))
+            self.driver.find_element_by_css_selector('*[%s="%s"]' % (self.css_selector, eztestid))
         except NoSuchElementException:
             raise AssertionError("Element with eztestid: \"%s\" not found")
 
     def assert_has_correct_val(self, eztestid):
         expected_val = self.eztestids[eztestid]
         try:
-            ele = self.driver.find_by_css_selector('[%s="%s"]' % (self.css_selector, eztestid))
+            ele = self.driver.find_by_element_css_selector('*[%s="%s"]' % (self.css_selector, eztestid))
         except NoSuchElementException:
             raise AssertionError("Element with eztestid: \"%s\" not found")
         assert (ele.text.strip() == expected_val)

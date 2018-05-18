@@ -1,0 +1,14 @@
+
+- Have tests been run through package script cmdline thingy called 'eztest'
+    - This script will find tests by looking for two environment variables called 'EZTESTCASES', and 'FLASK_APP'
+        - (Maybe) It can either be one testcase module or a comma seperated list
+
+- eztest script will do the following
+
+    - Load all modules named in env vars
+    - Instantiate and initialize the EZTester object using the flask app imported
+    - Pass the eztester to a custom TestSuite class that handles starting up and stopping the selenium driver and clearing the database
+    - Each EZTestCase should be able to seed the database with a fixture and clear if afterwards somehow
+    - Start up a child thread running the flask app
+    - Run each child class of EZTestCase found using __subclasses__() in some sort of suite
+    - Exit the program to stop the flask thread (no other way to do it since it runs forever)

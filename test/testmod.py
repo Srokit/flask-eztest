@@ -1,13 +1,14 @@
 """Staring point for running flaskeztest cli test."""
 
-from app import eztester, db, app
 import unittest
 
 runner = unittest.TextTestRunner()
 
+
 class TestCase1(unittest.TestCase):
 
     def setUp(self):
+        from app import eztester
         self.eztester = eztester
         self.eztester.init_app_and_db(app, db)
         self.eztestclient = self.eztester.get_client_after_loading_fixture('simple')
@@ -22,7 +23,7 @@ class TestCase1(unittest.TestCase):
         self.eztestclient.quit_driver()
 
 
-def run():
+def run(eztester):
     """Run all test cases using EZTesterClient"""
     runner.run(unittest.makeSuite(TestCase1))
 

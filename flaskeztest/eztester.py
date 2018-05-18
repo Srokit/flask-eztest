@@ -6,6 +6,10 @@ from selenium.common.exceptions import NoSuchElementException
 from flask import Flask
 from subprocess import Popen
 from os import getcwd
+import threading
+from sys import exit
+from unittest import makeSuite, TextTestRunner
+import time
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
@@ -16,7 +20,7 @@ import yaml
 
 from exceptions import NotInitializedError
 from eztesterclient import EZTesterClient
-
+from eztestcase import EZTestCase
 
 class EZTester(object):
     """
@@ -43,7 +47,9 @@ class EZTester(object):
         self.flask_app_name = None
         self.flask_app_proc = None
 
-    def init_app_and_db(self, flask_app, sqlalchemy_db):
+        self.test_case_class = EZTestCase
+
+    def init_app(self, flask_app):
         if not isinstance(flask_app, Flask):
             raise TypeError("flask_app argument to init_app_and_db must be a Flask app.")
         if not isinstance(sqlalchemy_db, SQLAlchemy):
@@ -70,6 +76,30 @@ class EZTester(object):
         # TODO: Map seed data to eztestids by looking at sqlalchemy db schema
 
         self.initialized = True
+
+    def run_tests_and_exit(self, func):
+        if not self.initialized:
+            raise NotInitializedError()
+
+        def start_flask(app):
+            app.run(host='127.0.0.1', port=5000)
+
+        assert isinstance(self.flask_app, Flask)
+        flask_thread = threading.Thread(target=start_flask, args=[self.flask_app])
+        flask_thread.setDaemon(True)
+        flask_thread.start()
+
+        time.sleep(2)
+
+        runner = TextTestRunner()
+        for tc in self.test_case_class.__subclasses__():
+            runner.run(makeSuite(tc))
+
+        exit(0)
+
+    def print_all_subclasses(self):
+        print self.test_case_class.__subclasses__()
+
 
     def get_client_after_loading_fixture(self, fixture_name, fix_dir=None):
         if not self.initialized:
