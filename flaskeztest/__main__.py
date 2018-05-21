@@ -1,58 +1,77 @@
 """Define functions which will be able to be ran through package."""
 
-from subprocess import Popen, call
-from sys import argv, exit, path
+import sys
 import os
 import threading
-import unittest
-import time
-
 from importlib import import_module
 
-print path
+import eztestcase
 
-USAGE_MESSAGE = "Usage: eztest flask_app_module_name"
+USAGE_MESSAGE = "Usage: eztest flask_module \"test_module1, test_module2, ..., \" "
+
 
 def flaskeztest_main(args=None):
     """
     Call this from main entry point of flaskeztest package.
 
-    args: ( flask_module [, test_module])
+    args: flask_module "test_module1, test_module2, ..., "
     """
     if args is None:
         try:
-            args = argv[1:]
+            args = sys.argv[1:]
         except IndexError:
             args = []
 
-    if len(args) < 1 or len(args) > 2:
+    if len(args) != 2:
         print USAGE_MESSAGE
         exit(1)
 
-    flask_app_module = args[0]
+    flask_module = args[0]
 
-    if len(args) == 2:
-        test_module = args[1]
-    else:
-        test_module = 'test'
+    test_modules = [mod.trim() for mod in args[1].split(',')]
 
-    print "Starting flask app"
+    flask_module = import_module(parse_module_name_from_filepath(flask_module))
+    for mod in test_modules:
+        import_module(parse_module_name_from_filepath(mod))
 
-    print flask_app_module
+    app = flask_module.app
+    eztest = flask_module.eztest
 
-    flask_mod = import_module(flask_app_module)
-    app = flask_mod.app
+    eztest.run()
 
-    app_thread = threading.Thread(target=app.run, kwargs=dict(self=app, host='127.0.0.1', port=5000))
+    app_thread = threading.Thread(target=run_app, args=(app, ))
     app_thread.setDaemon(True)  # exiting will also end this thread
     app_thread.start()
 
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print "exiting"
-    exit()
+
+def parse_module_name_from_filepath(filepath):
+    """
+    Adds module file path to python path and returns the proper name that eztest should import.
+    Most of this was taken from flask github source code
+    :type filepath: str
+    """
+    path = os.path.realpath(filepath)
+
+    if os.path.splitext(path)[1] == '.py':
+        path = os.path.splitext(path)[0]
+
+    if os.path.basename(path) == '__init__':
+        path = os.path.dirname(path)
+
+    module_name = []
+
+    # move up until outside package structure (no __init__.py)
+    while True:
+        path, name = os.path.split(path)
+        module_name.append(name)
+
+        if not os.path.exists(os.path.join(path, '__init__.py')):
+            break
+
+    if sys.path[0] != path:
+        sys.path.insert(0, path)
+
+    return '.'.join(module_name[::-1])
 
 
 if __name__ == '__main__':

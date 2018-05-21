@@ -22,6 +22,7 @@ from exceptions import NotInitializedError
 from eztesterclient import EZTesterClient
 from eztestcase import EZTestCase
 
+
 class EZTester(object):
     """
     A EZTester instance is the main component of the flaskeztest framework.
@@ -38,18 +39,15 @@ class EZTester(object):
 
     def __init__(self):
         object.__init__(self)
-        self.initialized = False
         self.css_selector = '_eztestid'  # Default
         self.fixtures_dir = './fixtures'  # Default
-        self.db_session = None
         self.eztestids = dict()
         self.flask_app = None
         self.flask_app_name = None
         self.flask_app_proc = None
-
         self.test_case_class = EZTestCase
 
-    def init_app(self, flask_app):
+    def init_app_and_db(self, flask_app, sqlalchemy_db):
         if not isinstance(flask_app, Flask):
             raise TypeError("flask_app argument to init_app_and_db must be a Flask app.")
         if not isinstance(sqlalchemy_db, SQLAlchemy):
@@ -58,9 +56,7 @@ class EZTester(object):
             sqlalchemy_db.init_app(flask_app)
 
         self.flask_app = flask_app
-
-        with self.flask_app.app_context():
-            self.db_session = scoped_session(sessionmaker(autoflush=False, autocommit=False, bind=sqlalchemy_db.engine))
+        self.db = sqlalchemy_db
 
         if flask_app.config.get('EZTEST_FIXTURES_DIR'):
             self.fixtures_dir = flask_app.config.get('EZTEST_FIXTURES_DIR')
@@ -77,29 +73,9 @@ class EZTester(object):
 
         self.initialized = True
 
-    def run_tests_and_exit(self, func):
-        if not self.initialized:
-            raise NotInitializedError()
-
-        def start_flask(app):
-            app.run(host='127.0.0.1', port=5000)
-
-        assert isinstance(self.flask_app, Flask)
-        flask_thread = threading.Thread(target=start_flask, args=[self.flask_app])
-        flask_thread.setDaemon(True)
-        flask_thread.start()
-
-        time.sleep(2)
-
-        runner = TextTestRunner()
-        for tc in self.test_case_class.__subclasses__():
-            runner.run(makeSuite(tc))
-
-        exit(0)
-
-    def print_all_subclasses(self):
-        print self.test_case_class.__subclasses__()
-
+    def create_tables(self):
+        with self.flask_app.app_context():
+            self.db.create_all()
 
     def get_client_after_loading_fixture(self, fixture_name, fix_dir=None):
         if not self.initialized:
@@ -118,19 +94,7 @@ class EZTester(object):
         client = EZTesterClient(self.eztestids, self.css_selector)
         return client
 
-    def assert_ele_exists(self, ele_id):
-        try:
-            self.sel_client.find_element_by_css_selector('[%s="%s"]' % (self.css_selector, ele_id))
-        except NoSuchElementException:
-            raise AssertionError("Did not find element with attribute %s=\"%s\"." % (self.css_selector, ele_id))
-
     # Private Helpers
-
-    def startup_flask_app(self):
-        self.flask_app_proc = Popen(['flask', 'run'], env={'FLASK_APP': self.flask_app_name, 'PY_ENV': 'test'})
-
-    def kill_flask_app(self):
-        self.flask_app_proc.kill()
 
     def parse_eztestids_from_models(self, models):
         for model in models:
