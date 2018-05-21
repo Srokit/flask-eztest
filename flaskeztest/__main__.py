@@ -1,11 +1,8 @@
 """Define functions which will be able to be ran through package."""
 
-import sys
 import os
-import threading
+import sys
 from importlib import import_module
-
-import eztestcase
 
 USAGE_MESSAGE = "Usage: eztest flask_module \"test_module1, test_module2, ..., \" "
 
@@ -31,17 +28,14 @@ def flaskeztest_main(args=None):
     test_modules = [mod.trim() for mod in args[1].split(',')]
 
     flask_module = import_module(parse_module_name_from_filepath(flask_module))
+    # Can now access all user's eztestcases by looking at EZTestCase.__subclasses__()
     for mod in test_modules:
         import_module(parse_module_name_from_filepath(mod))
 
-    app = flask_module.app
     eztest = flask_module.eztest
 
+    # Start up flask app and run our tests against it
     eztest.run()
-
-    app_thread = threading.Thread(target=run_app, args=(app, ))
-    app_thread.setDaemon(True)  # exiting will also end this thread
-    app_thread.start()
 
 
 def parse_module_name_from_filepath(filepath):
