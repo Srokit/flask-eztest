@@ -9,7 +9,7 @@ import time
 
 from selenium.webdriver.phantomjs.webdriver import WebDriver
 
-from eztestcase import EZTestCase
+from eztestcase import EZTestCase, FullFixtureEZTestCase
 from eztestsuite import EZTestSuite
 
 
@@ -24,6 +24,7 @@ class EZTest(object):
         self.model_clases = None
         self.sqlite_db_file = None
         self.sqlite_db_fn = None
+        self.full_fix_test_case_instances = []
 
     def init_with_app_and_db(self, app, db):
         self.app = app
@@ -35,6 +36,9 @@ class EZTest(object):
             self.sqlite_db_file, self.sqlite_db_fn = tempfile.mkstemp()
             # self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.app.config.get('EZTEST_SQLITE_DB_URI')
             self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.sqlite_db_fn
+
+        # So that we can use url_for before the app starts
+        self.app.config['SERVER_NAME'] = 'localhost:5000'
 
         self.db.init_app(self.app)
 
@@ -57,8 +61,11 @@ class EZTest(object):
         app_thread.start()
 
         test_case_classes = EZTestCase.__subclasses__()
+        test_case_classes.remove(FullFixtureEZTestCase)
 
         test_cases = [tc_class(self) for tc_class in test_case_classes]
+        # Add in test cases defined through route decorators
+        test_cases.extend(self.full_fix_test_case_instances)
 
         # For now package them all in the same suite
         suite = EZTestSuite(self, test_cases)
@@ -70,6 +77,17 @@ class EZTest(object):
 
         runner.run(suite)
         # Note when we come out of this function the main thread must call sys.exit(0) for flask app to stop running
+
+    # Decorators used by flask app view functions
+    def expect_full_fixture(self, fixture):
+
+        def decorator(view_func):
+            endpoint = view_func.__name__
+            tc_inst = FullFixtureEZTestCase(self, fixture, endpoint)
+            self.full_fix_test_case_instances.append(tc_inst)
+            return view_func
+
+        return decorator
 
     # These 3 are used by EZTestSuite before and after running tests
 
@@ -93,15 +111,19 @@ class EZTest(object):
         eztestids_for_fixture = dict()
 
         with self.app.app_context():
-            for (i, model) in enumerate(models):
-                eztestids_for_fixture.update(**self.eztestids_from_model_dict(model, i))
-                self.seed_db_with_model_dict(model)
+            for model in models:
+                if 'row' in model:  # Otherwise we would find 'rows' key
+                    eztestids_for_fixture.update(**self.eztestids_from_row_dict(model['model'], model['row']))
+                    self.seed_db_with_row_dict(model['model'], model['row'])
+                else:
+                    for row_i, row in enumerate(model['rows']):
+                        eztestids_for_fixture.update(**self.eztestids_from_row_dict(model['model'], row, row_i))
+                        self.seed_db_with_row_dict(model['model'], row)
             self.db.session.commit()
 
         return eztestids_for_fixture
 
     # Used by EZTestCase objects to reset data in between test cases
-
     def reset_db(self):
         with self.app.app_context():
             self.db.drop_all()
@@ -116,22 +138,27 @@ class EZTest(object):
         return json.loads(open('./test/fixtures/%s' % (fixture+'.json')).read())
 
     @classmethod
-    def eztestids_from_model_dict(cls, model, model_i):
-
+    def eztestids_from_row_dict(cls, model_name, row, row_i=None):
         eztestids = dict()
-
-        for (field, field_val) in model['fields'].iteritems():
-            eztestids['%s[%d].%s' % (model['model'], model_i, field)] = str(field_val)
-
+        for (field, field_val) in row.iteritems():
+            if row_i is None:
+                eztestids['%s.%s' % (model_name, field)] = str(field_val)
+            else:
+                eztestids['%s[%d].%s' % (model_name, row_i, field)] = str(field_val)
         return eztestids
 
-    def seed_db_with_model_dict(self, model):
-        self.db.session.add(self.model_clases[model['model']](**model['fields']))
+    def seed_db_with_row_dict(self, model_name, row):
+        self.db.session.add(self.model_clases[model_name](**row))
 
     def register_ctx_processor(self):
 
-        def eztestid_func(eztestid):
+        def eztestid_func(eztestid, index=None):
             if self.testing:
+                if index is None:
+                    return '_eztestid='+eztestid
+                eztestid = eztestid.split('.')
+                eztestid[0] += '[%d]' % index
+                eztestid = '.'.join(eztestid)
                 return '_eztestid='+eztestid
             else:
                 return ''
