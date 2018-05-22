@@ -1,12 +1,11 @@
 """Setup flask-eztest."""
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 requirements = [
     'Flask',
     'selenium',
-    'Flask-SQLAlchemy',
-    'sqlalchemy_seed'
+    'Flask-SQLAlchemy'
 ]
 
 description = "Flask test generation based on db models."
@@ -33,7 +32,7 @@ setup(
     description=description,
     long_description=long_description,
     install_requires=requirements,
-    packages=find_packages(exclude=['test']),
+    packages=['flaskeztest'],
     classifiers=classifiers,
     entry_points={
         'console_scripts': [
