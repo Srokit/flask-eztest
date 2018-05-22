@@ -1,4 +1,4 @@
-"""EZTestCase class defined here."""
+"""EZTestCase class as well as its subclasses used be eztest package defined here."""
 
 from unittest import TestCase
 
@@ -7,7 +7,7 @@ from selenium.common.exceptions import NoSuchElementException
 
 
 class EZTestCase(TestCase):
-    """Test cases that should be ran with flaskeztest should inherit from this class."""
+    """Test cases that should be ran with flaskeztest 'eztest' command should inherit from this class."""
     FIXTURE = None
 
     def __init__(self, eztest, method_name='runTest'):
