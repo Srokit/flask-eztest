@@ -9,6 +9,7 @@ from model import db, User
 FLASK_APP_CONFIG = {
     'EZTEST_FIXTURES_DIR': 'test/fixtures',
     'EZTEST_TESTCASE_MODULE_PATHS': ['test/testcases.py', 'test/fail_testcases.py'],
+    'SQLALCHEMY_TRACK_MODIFICATIONS': False,
     'PY_ENV': 'test'
 }
 

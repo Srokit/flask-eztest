@@ -5,6 +5,7 @@ import json
 import tempfile
 import os
 from importlib import import_module
+import warnings
 
 import time
 
@@ -41,6 +42,10 @@ class EZTest(object):
         if not self.testing:
             return
 
+        # Unfortunately PhantomJS is no longer maintained but its still useful for this purpose
+        warnings.filterwarnings("ignore", message="Selenium support for PhantomJS has been deprecated, please use "
+                                                  "headless versions of Chrome or Firefox instead")
+
         self.sqlite_db_file, self.sqlite_db_fn = tempfile.mkstemp()
         # self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.app.config.get('EZTEST_SQLITE_DB_URI')
         self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.sqlite_db_fn
@@ -59,8 +64,6 @@ class EZTest(object):
         model_class_objs = self.db.Model.__subclasses__()
         self.model_clases = dict([(obj.__name__, obj) for obj in model_class_objs])
 
-        print self.model_clases
-
         # So eztestid function will work in all view function templates
         self.register_ctx_processor()
 
@@ -70,7 +73,8 @@ class EZTest(object):
             raise PyEnvNotTestError()
 
         def run_app(app):
-            app.run('127.0.0.1', port=5000)
+            from werkzeug.serving import run_simple
+            run_simple('127.0.0.1', 5000, app)
 
         app_thread = threading.Thread(target=run_app, args=(self.app, ))
         app_thread.setDaemon(True)

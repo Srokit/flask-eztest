@@ -3,6 +3,7 @@
 from importlib import import_module
 import sys
 import os
+import logging
 
 from helpers import parse_module_name_from_filepath
 
@@ -13,6 +14,9 @@ def flaskeztest_main(args=None):
     """
     Call this from main entry point of flaskeztest package.
     """
+
+    # Get rid of annoying output for every request
+    logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
     flask_module = os.environ.get('FLASK_APP')
 
