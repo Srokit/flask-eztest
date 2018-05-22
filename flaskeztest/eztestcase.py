@@ -5,6 +5,8 @@ from unittest import TestCase
 import flask
 from selenium.common.exceptions import NoSuchElementException
 
+from exceptions import EztestidNotInFixture
+
 
 class EZTestCase(TestCase):
     """Test cases that should be ran with flaskeztest 'eztest' command should inherit from this class."""
@@ -31,6 +33,8 @@ class EZTestCase(TestCase):
         self.eztestids = self.eztest.load_fixture(self.fixture)
 
     def assert_ele_exists(self, eztestid):
+        if eztestid not in self.eztestids:
+            raise EztestidNotInFixture(eztestid)
         try:
             self.driver.find_element_by_css_selector('*[%s="%s"]' % ('_eztestid', eztestid))
         except NoSuchElementException:
@@ -50,6 +54,8 @@ class EZTestCase(TestCase):
             self.assert_ele_exists(eztestid)
 
     def get_ele(self, eztestid):
+        if eztestid not in self.eztestids:
+            raise EztestidNotInFixture(eztestid)
         try:
             return self.driver.find_element_by_css_selector('*[%s="%s"]' % ('_eztestid', eztestid))
         except NoSuchElementException:

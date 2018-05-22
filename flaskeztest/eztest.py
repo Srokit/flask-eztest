@@ -13,6 +13,7 @@ from selenium.webdriver.phantomjs.webdriver import WebDriver
 from eztestcase import EZTestCase, FullFixtureEZTestCase
 from eztestsuite import EZTestSuite
 from helpers import parse_module_name_from_filepath
+from exceptions import PyEnvNotTestError, FixtureDoesNotExistError
 
 
 class EZTest(object):
@@ -36,10 +37,13 @@ class EZTest(object):
 
         self.testing = self.app.config.get('PY_ENV') == 'test'
 
-        if self.testing:
-            self.sqlite_db_file, self.sqlite_db_fn = tempfile.mkstemp()
-            # self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.app.config.get('EZTEST_SQLITE_DB_URI')
-            self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.sqlite_db_fn
+        # Don't want to run a production flask app under thies test settings
+        if not self.testing:
+            return
+
+        self.sqlite_db_file, self.sqlite_db_fn = tempfile.mkstemp()
+        # self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.app.config.get('EZTEST_SQLITE_DB_URI')
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.sqlite_db_fn
 
         self.testcase_module_paths = self.app.config.get('EZTEST_TESTCASE_MODULE_PATHS')
         self.fixtures_dir = self.app.config.get('EZTEST_FIXTURES_DIR')
@@ -61,6 +65,9 @@ class EZTest(object):
         self.register_ctx_processor()
 
     def run(self):
+
+        if not self.testing:
+            raise PyEnvNotTestError()
 
         def run_app(app):
             app.run('127.0.0.1', port=5000)
@@ -91,9 +98,10 @@ class EZTest(object):
     def expect_full_fixture(self, fixture):
 
         def decorator(view_func):
-            endpoint = view_func.__name__
-            tc_inst = FullFixtureEZTestCase(self, fixture, endpoint)
-            self.full_fix_test_case_instances.append(tc_inst)
+            if self.testing:
+                endpoint = view_func.__name__
+                tc_inst = FullFixtureEZTestCase(self, fixture, endpoint)
+                self.full_fix_test_case_instances.append(tc_inst)
             return view_func
 
         return decorator
@@ -141,7 +149,10 @@ class EZTest(object):
     # Private helpers
 
     def parse_model_dicts_from_fixture(self, fixture):
-        return json.loads(open('%s/%s' % (self.fixtures_dir, fixture+'.json')).read())
+        try:
+            return json.loads(open('%s/%s' % (self.fixtures_dir, fixture+'.json')).read())
+        except (OSError, IOError):
+            raise FixtureDoesNotExistError(self.fixtures_dir, fixture+'.json')
 
     @classmethod
     def eztestids_from_row_dict(cls, model_name, row, row_i=None):
