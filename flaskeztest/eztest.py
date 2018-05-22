@@ -5,7 +5,6 @@ import json
 import tempfile
 import os
 
-# DEBUG
 import time
 
 from selenium.webdriver.phantomjs.webdriver import WebDriver
@@ -61,14 +60,13 @@ class EZTest(object):
 
         test_cases = [tc_class(self) for tc_class in test_case_classes]
 
-        print test_cases
-
         # For now package them all in the same suite
         suite = EZTestSuite(self, test_cases)
 
         runner = TextTestRunner()
 
-        time.sleep(2)
+        # Give flask app arbitrary time to setup
+        time.sleep(0.5)
 
         runner.run(suite)
         # Note when we come out of this function the main thread must call sys.exit(0) for flask app to stop running
