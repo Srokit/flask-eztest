@@ -4,6 +4,7 @@ from unittest import TextTestRunner
 import json
 import tempfile
 import os
+from importlib import import_module
 
 import time
 
@@ -11,6 +12,7 @@ from selenium.webdriver.phantomjs.webdriver import WebDriver
 
 from eztestcase import EZTestCase, FullFixtureEZTestCase
 from eztestsuite import EZTestSuite
+from helpers import parse_module_name_from_filepath
 
 
 class EZTest(object):
@@ -24,6 +26,7 @@ class EZTest(object):
         self.model_clases = None
         self.sqlite_db_file = None
         self.sqlite_db_fn = None
+        self.testcase_module_paths = None
         self.full_fix_test_case_instances = []
 
     def init_with_app_and_db(self, app, db):
@@ -36,6 +39,10 @@ class EZTest(object):
             self.sqlite_db_file, self.sqlite_db_fn = tempfile.mkstemp()
             # self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.app.config.get('EZTEST_SQLITE_DB_URI')
             self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.sqlite_db_fn
+
+        self.testcase_module_paths = self.app.config.get('EZTEST_TESTCASE_MODULE_PATHS')
+
+        self.import_testcase_modules()
 
         # So that we can use url_for before the app starts
         self.app.config['SERVER_NAME'] = 'localhost:5000'
@@ -146,6 +153,10 @@ class EZTest(object):
             else:
                 eztestids['%s[%d].%s' % (model_name, row_i, field)] = str(field_val)
         return eztestids
+
+    def import_testcase_modules(self):
+        for mod_path in self.testcase_module_paths:
+            import_module(parse_module_name_from_filepath(mod_path))
 
     def seed_db_with_row_dict(self, model_name, row):
         self.db.session.add(self.model_clases[model_name](**row))

@@ -8,9 +8,8 @@ from model import db, Table1
 
 FLASK_APP_CONFIG = {
     'EZTEST_FIXTURES_DIR': 'test/fixtures',
-    'EZTEST_CSS_SELECTOR': '_eztestid',
-    'PY_ENV': 'test',
-    'EZTEST_SQLITE_DB_URI': 'test/test.db'
+    'EZTEST_TESTCASE_MODULE_PATHS': ['test/testcase.py'],
+    'PY_ENV': 'test'
 }
 
 app = Flask(__name__)
