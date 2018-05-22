@@ -22,6 +22,11 @@ class EZTestCase(TestCase):
         self.eztest.reset_db()
         self.load_fixture()
 
+    def navigate_to_endpoint(self, endpoint):
+        with self.eztest.app.app_context():
+            url = flask.url_for(endpoint, _external=True)
+        self.driver.get(url)
+
     def load_fixture(self):
         self.eztestids = self.eztest.load_fixture(self.fixture)
 
@@ -29,14 +34,12 @@ class EZTestCase(TestCase):
         try:
             self.driver.find_element_by_css_selector('*[%s="%s"]' % ('_eztestid', eztestid))
         except NoSuchElementException:
-            self.fail('Did not find element')
+            self.fail_doesnt_exist(eztestid)
 
     def assert_ele_has_correct_text(self, eztestid):
-        try:
-            ele = self.driver.find_element_by_css_selector('*[%s="%s"]' % ('_eztestid', eztestid))
-        except NoSuchElementException:
-            self.fail('Did not find element')
-        self.assertEqual(ele.text.strip(), self.eztestids[eztestid])
+        ele = self.get_ele(eztestid)
+        self.assertEqual(ele.text.strip(), self.eztestids[eztestid],
+                         self.get_incorrect_text_fail_mess(eztestid, ele.text.strip(), self.eztestids[eztestid]))
 
     def assert_full_model_exists(self, model):
         for eztestid in self.get_testids_for_model(model):
@@ -46,11 +49,25 @@ class EZTestCase(TestCase):
         for eztestid in self.eztestids:
             self.assert_ele_exists(eztestid)
 
+    def get_ele(self, eztestid):
+        try:
+            return self.driver.find_element_by_css_selector('*[%s="%s"]' % ('_eztestid', eztestid))
+        except NoSuchElementException:
+            self.fail_doesnt_exist(eztestid)
+
     # Helpers
 
     def get_testids_for_model(self, model):
         return [testid for testid in self.eztestids if testid.startswith(model) and
                 testid[len(model)] in ('[', '.')]
+
+    def fail_doesnt_exist(self, eztestid):
+        self.fail("Element with eztestid=\"%s\" not found." % eztestid)
+
+    @classmethod
+    def get_incorrect_text_fail_mess(cls, eztestid, given_val, expected_val):
+        return "Element with eztestid=\"%s\" has incorrect val. Expected=\"%s\", but Given=\"%s\"" \
+               % (eztestid, expected_val, given_val)
 
 
 class FullFixtureEZTestCase(EZTestCase):
@@ -64,7 +81,5 @@ class FullFixtureEZTestCase(EZTestCase):
         EZTestCase.setUp(self)
 
     def runTest(self):
-        with self.eztest.app.app_context():
-            url = flask.url_for(self.endpoint, _external=True)
-        self.driver.get(url)
+        self.navigate_to_endpoint(self.endpoint)
         self.assert_full_fixture_exists()

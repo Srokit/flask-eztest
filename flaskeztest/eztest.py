@@ -27,6 +27,7 @@ class EZTest(object):
         self.sqlite_db_file = None
         self.sqlite_db_fn = None
         self.testcase_module_paths = None
+        self.fixtures_dir = None
         self.full_fix_test_case_instances = []
 
     def init_with_app_and_db(self, app, db):
@@ -41,6 +42,7 @@ class EZTest(object):
             self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.sqlite_db_fn
 
         self.testcase_module_paths = self.app.config.get('EZTEST_TESTCASE_MODULE_PATHS')
+        self.fixtures_dir = self.app.config.get('EZTEST_FIXTURES_DIR')
 
         self.import_testcase_modules()
 
@@ -138,11 +140,8 @@ class EZTest(object):
 
     # Private helpers
 
-    @classmethod
-    def parse_model_dicts_from_fixture(cls, fixture):
-
-        # For now just make fixture dir the static
-        return json.loads(open('./test/fixtures/%s' % (fixture+'.json')).read())
+    def parse_model_dicts_from_fixture(self, fixture):
+        return json.loads(open('%s/%s' % (self.fixtures_dir, fixture+'.json')).read())
 
     @classmethod
     def eztestids_from_row_dict(cls, model_name, row, row_i=None):

@@ -1,0 +1,15 @@
+[
+  {
+    "model": "User",
+    "rows": [
+      {
+        "name": "Bob",
+        "email": "bob@example.com"
+      },
+      {
+        "name": "Alice",
+        "email": "alice@example.com"
+      }
+    ]
+  }
+]

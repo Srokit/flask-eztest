@@ -1,0 +1,9 @@
+[
+  {
+    "model": "User",
+    "row": {
+      "name": "Bob",
+      "email": "bob@example.com"
+    }
+  }
+]
