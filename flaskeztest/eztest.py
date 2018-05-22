@@ -109,12 +109,14 @@ class EZTest(object):
 
     # Private helpers
 
-    def parse_model_dicts_from_fixture(self, fixture):
+    @classmethod
+    def parse_model_dicts_from_fixture(cls, fixture):
 
         # For now just make fixture dir the static
         return json.loads(open('./test/fixtures/%s' % (fixture+'.json')).read())
 
-    def eztestids_from_model_dict(self, model, model_i):
+    @classmethod
+    def eztestids_from_model_dict(cls, model, model_i):
 
         eztestids = dict()
 
