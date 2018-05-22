@@ -180,11 +180,11 @@ class EZTest(object):
         def eztestid_func(eztestid, index=None):
             if self.testing:
                 if index is None:
-                    return '_eztestid='+eztestid
+                    return '_eztestid="%s"' % eztestid
                 eztestid = eztestid.split('.')
                 eztestid[0] += '[%d]' % index
                 eztestid = '.'.join(eztestid)
-                return '_eztestid='+eztestid
+                return '_eztestid="%s"' % eztestid
             else:
                 return ''
 
