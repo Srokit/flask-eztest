@@ -13,3 +13,5 @@ env/
 
 # Selenium driver stuff
 ghostdriver.log
+
+*.db

@@ -12,3 +12,4 @@ class EZTestSuite(TestSuite):
         self.eztest.start_driver()
         TestSuite.run(self, result, debug)
         self.eztest.quit_driver()
+        self.eztest.remove_db_file()

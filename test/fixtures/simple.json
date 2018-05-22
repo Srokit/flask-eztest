@@ -1,0 +1,14 @@
+[
+  {
+    "model": "Table1",
+    "fields": {
+      "name": "Stan"
+    }
+  },
+  {
+    "model": "Table1",
+    "fields": {
+      "name": "Stan2"
+    }
+  }
+]

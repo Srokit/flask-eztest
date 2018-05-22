@@ -25,7 +25,7 @@ def flaskeztest_main(args=None):
 
     flask_module = args[0]
 
-    test_modules = [mod.trim() for mod in args[1].split(',')]
+    test_modules = [mod.strip() for mod in args[1].split(',')]
 
     flask_module = import_module(parse_module_name_from_filepath(flask_module))
     # Can now access all user's eztestcases by looking at EZTestCase.__subclasses__()
@@ -36,6 +36,9 @@ def flaskeztest_main(args=None):
 
     # Start up flask app and run our tests against it
     eztest.run()
+
+    # To terminate the flask app thread started in eztest.run()
+    sys.exit(0)
 
 
 def parse_module_name_from_filepath(filepath):

@@ -12,16 +12,25 @@ class EZTestCase(TestCase):
     def __init__(self, eztest, method_name='runTest'):
         TestCase.__init__(self, method_name)
         self.eztest = eztest
-        self.driver = eztest.driver
-        self.driver.implicitly_wait(1)
+        self.driver = None
         self.fixture = self.__class__.FIXTURE
         self.eztestids = dict()
 
+    def setUp(self):
+        self.driver = self.eztest.driver
+
     def load_fixture(self):
-        self.eztestids = self.eztest.load_fixture(self.fixure)
+        self.eztestids = self.eztest.load_fixture(self.fixture)
 
     def assert_ele_exists(self, eztestid):
         try:
-            self.driver.find_elements_by_css_selector('*[@%s="%s"' % ('_eztestid', eztestid))
+            self.driver.find_element_by_css_selector('*[%s="%s"]' % ('_eztestid', eztestid))
         except NoSuchElementException:
             self.fail('Did not find element')
+
+    def assert_ele_has_correct_text(self, eztestid):
+        try:
+            ele = self.driver.find_element_by_css_selector('*[%s="%s"]' % ('_eztestid', eztestid))
+        except NoSuchElementException:
+            self.fail('Did not find element')
+        self.assertEqual(ele.text.strip(), self.eztestids[eztestid])

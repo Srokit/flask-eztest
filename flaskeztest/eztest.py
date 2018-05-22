@@ -2,6 +2,11 @@
 import threading
 from unittest import TextTestRunner
 import json
+import tempfile
+import os
+
+# DEBUG
+import time
 
 from selenium.webdriver.phantomjs.webdriver import WebDriver
 
@@ -18,17 +23,27 @@ class EZTest(object):
         self.driver = None
         self.testing = None
         self.model_clases = None
+        self.sqlite_db_file = None
+        self.sqlite_db_fn = None
 
     def init_with_app_and_db(self, app, db):
         self.app = app
         self.db = db
-        # For now assumer user called db.init_app(app)
+
+        self.testing = self.app.config.get('PY_ENV') == 'test'
+
+        if self.testing:
+            self.sqlite_db_file, self.sqlite_db_fn = tempfile.mkstemp()
+            # self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.app.config.get('EZTEST_SQLITE_DB_URI')
+            self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.sqlite_db_fn
+
+        self.db.init_app(self.app)
 
         # Create dict with values being model class name and their values being the class itself
         model_class_objs = self.db.Model.__subclasses__()
-        self.model_clases = dict([(obj, obj.__name__) for obj in model_class_objs])
+        self.model_clases = dict([(obj.__name__, obj) for obj in model_class_objs])
 
-        self.testing = self.app.config.get('PY_ENV') == 'test'
+        print self.model_clases
 
         # So eztestid function will work in all view function templates
         self.register_ctx_processor()
@@ -46,21 +61,29 @@ class EZTest(object):
 
         test_cases = [tc_class(self) for tc_class in test_case_classes]
 
+        print test_cases
+
         # For now package them all in the same suite
-        suite = EZTestSuite(test_cases)
+        suite = EZTestSuite(self, test_cases)
 
         runner = TextTestRunner()
+
+        time.sleep(2)
 
         runner.run(suite)
         # Note when we come out of this function the main thread must call sys.exit(0) for flask app to stop running
 
-    # These 2 are used by EZTestSuite before and after running tests
+    # These 3 are used by EZTestSuite before and after running tests
 
     def start_driver(self):
         self.driver = WebDriver()
+        self.driver.implicitly_wait(1)
 
     def quit_driver(self):
         self.driver.quit()
+
+    def remove_db_file(self):
+        os.remove(self.sqlite_db_fn)
 
     # Used by EZTestSuite objects to load fixtures
 
@@ -71,11 +94,20 @@ class EZTest(object):
 
         eztestids_for_fixture = dict()
 
-        for (i, model) in enumerate(models):
-            eztestids_for_fixture.update(**self.eztestids_from_model_dict(model, i))
-            self.seed_db_with_model_dict(model)
+        with self.app.app_context():
+            for (i, model) in enumerate(models):
+                eztestids_for_fixture.update(**self.eztestids_from_model_dict(model, i))
+                self.seed_db_with_model_dict(model)
+            self.db.session.commit()
 
         return eztestids_for_fixture
+
+    # Used by EZTestCase objects to reset data in between test cases
+
+    def reset_db(self):
+        with self.app.app_context():
+            self.db.drop_all()
+            self.db.create_all()
 
     # Private helpers
 
