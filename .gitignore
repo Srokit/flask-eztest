@@ -15,3 +15,7 @@ env/
 ghostdriver.log
 
 *.db
+
+dist/
+
+build/
