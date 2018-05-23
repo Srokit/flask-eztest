@@ -39,7 +39,7 @@ class EZTest(object):
 
         self.testing = self.app.config.get('PY_ENV') == 'test'
 
-        # Don't want to run a production flask app under thies test settings
+        # Don't want to run a production flask app under these test settings
         if not self.testing:
             return
 
@@ -52,7 +52,6 @@ class EZTest(object):
             reflection_db_uri = self.app.config.get('EZTEST_REFLECTION_DB_URI')
             self.app.config['SQLALCHEMY_DATABASE_URI'] = reflection_db_uri
             relection_db = SQLAlchemy(self.app)
-            relection_db.class_mapper
             with self.app.app_context():
                 self.db.Model.metadata.reflect(relection_db.engine)
 
