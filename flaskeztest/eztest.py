@@ -6,10 +6,10 @@ import tempfile
 import os
 from importlib import import_module
 import warnings
-
 import time
 
 from selenium.webdriver.phantomjs.webdriver import WebDriver
+from flask_sqlalchemy import SQLAlchemy
 
 from eztestcase import EZTestCase, FullFixtureEZTestCase
 from eztestsuite import EZTestSuite
@@ -26,6 +26,7 @@ class EZTest(object):
         self.driver = None
         self.testing = None
         self.model_clases = None
+        self.reflecting_schema = None
         self.sqlite_db_file = None
         self.sqlite_db_fn = None
         self.testcase_module_paths = None
@@ -46,6 +47,23 @@ class EZTest(object):
         warnings.filterwarnings("ignore", message="Selenium support for PhantomJS has been deprecated, please use "
                                                   "headless versions of Chrome or Firefox instead")
 
+        if self.app.config.get('EZTEST_REFLECTION_DB_URI'):
+            self.reflecting_schema = True
+            reflection_db_uri = self.app.config.get('EZTEST_REFLECTION_DB_URI')
+            self.app.config['SQLALCHEMY_DATABASE_URI'] = reflection_db_uri
+            relection_db = SQLAlchemy(self.app)
+            relection_db.class_mapper
+            with self.app.app_context():
+                self.db.Model.metadata.reflect(relection_db.engine)
+
+            print self.db.Model.metadata.tables
+            self.model_clases = self.db.Model.metadata.tables
+        else:
+            self.reflecting_schema = False
+            # Create dict with values being model class name and their values being the class itself
+            model_class_objs = self.db.Model.__subclasses__()
+            self.model_clases = dict([(obj.__name__, obj) for obj in model_class_objs])
+
         self.sqlite_db_file, self.sqlite_db_fn = tempfile.mkstemp()
         # self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.app.config.get('EZTEST_SQLITE_DB_URI')
         self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.sqlite_db_fn
@@ -59,10 +77,6 @@ class EZTest(object):
         self.app.config['SERVER_NAME'] = 'localhost:5000'
 
         self.db.init_app(self.app)
-
-        # Create dict with values being model class name and their values being the class itself
-        model_class_objs = self.db.Model.__subclasses__()
-        self.model_clases = dict([(obj.__name__, obj) for obj in model_class_objs])
 
         # So eztestid function will work in all view function templates
         self.register_ctx_processor()
@@ -173,18 +187,23 @@ class EZTest(object):
             import_module(parse_module_name_from_filepath(mod_path))
 
     def seed_db_with_row_dict(self, model_name, row):
-        self.db.session.add(self.model_clases[model_name](**row))
+        if self.reflecting_schema:
+            model_tab = self.model_clases[model_name]
+            q = model_tab.insert().values(**row)
+            self.db.engine.execute(q)
+        else:
+            self.db.session.add(self.model_clases[model_name](**row))
 
     def register_ctx_processor(self):
 
         def eztestid_func(eztestid, index=None):
             if self.testing:
                 if index is None:
-                    return '_eztestid="%s"' % eztestid
+                    return '_eztestid=%s' % eztestid
                 eztestid = eztestid.split('.')
                 eztestid[0] += '[%d]' % index
                 eztestid = '.'.join(eztestid)
-                return '_eztestid="%s"' % eztestid
+                return '_eztestid=%s' % eztestid
             else:
                 return ''
 

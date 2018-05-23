@@ -10,6 +10,7 @@ class TestCase1(EZTestCase):
 
     def runTest(self):
         self.navigate_to_endpoint('index_two')
+        print self.driver.page_source
         self.assert_ele_exists('User[0].name')
         self.assert_ele_has_correct_text('User[0].name')
 
