@@ -49,6 +49,10 @@ class EZTestCase(TestCase):
         for eztestid in self.get_testids_for_model(model, row_index, exclude_fields):
             self.assert_ele_exists(eztestid)
 
+    def assert_full_model_is_correct(self, model, row_index=None, exclude_fields=[]):
+        for eztestid in self.get_testids_for_model(model, row_index, exclude_fields):
+            self.assert_ele_has_correct_text(eztestid)
+
     def assert_full_fixture_exists(self, exclude_models=[], exclude_fields=[]):
         for eztestid in self.eztestids:
             field_name = self.field_name_from_eztestid(eztestid)
@@ -56,6 +60,14 @@ class EZTestCase(TestCase):
 
             if model_name not in exclude_models and ('%s.%s' % (model_name, field_name)) not in exclude_fields:
                 self.assert_ele_exists(eztestid)
+
+    def assert_full_fixture_is_correct(self, exclude_models=[], exclude_fields=[]):
+        for eztestid in self.eztestids:
+            field_name = self.field_name_from_eztestid(eztestid)
+            model_name = self.model_name_from_eztestid(eztestid)
+
+            if model_name not in exclude_models and ('%s.%s' % (model_name, field_name)) not in exclude_fields:
+                self.assert_ele_has_correct_text(eztestid)
 
     def get_ele(self, eztestid):
         if eztestid not in self.eztestids:
@@ -105,7 +117,7 @@ class EZTestCase(TestCase):
         return int(eztestid[eztestid.index('[') + 1: eztestid.index(']')])
 
 
-class FullFixtureEZTestCase(EZTestCase):
+class ExpectFullFixtureEZTestCase(EZTestCase):
 
     def __init__(self, eztest, fixture, endpoint, exclude_models=[], exclude_fields=[], method_name='runTest'):
         EZTestCase.__init__(self, eztest, method_name)
@@ -119,7 +131,7 @@ class FullFixtureEZTestCase(EZTestCase):
 
     def runTest(self):
         self.navigate_to_endpoint(self.endpoint)
-        self.assert_full_fixture_exists(self.exclude_models, self.exclude_fields)
+        self.assert_full_fixture_is_correct(self.exclude_models, self.exclude_fields)
 
 
 class ExpectModelTestCase(EZTestCase):
@@ -134,4 +146,4 @@ class ExpectModelTestCase(EZTestCase):
 
     def runTest(self):
         self.navigate_to_endpoint(self.endpoint)
-        self.assert_full_model_exists(self.model_name, self.row_index, self.exclude_fields)
+        self.assert_full_model_is_correct(self.model_name, self.row_index, self.exclude_fields)

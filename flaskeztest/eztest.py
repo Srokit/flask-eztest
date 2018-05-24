@@ -10,7 +10,7 @@ import time
 from selenium.webdriver.phantomjs.webdriver import WebDriver
 from flask_sqlalchemy import SQLAlchemy
 
-from eztestcase import EZTestCase, FullFixtureEZTestCase, ExpectModelTestCase
+from eztestcase import EZTestCase, ExpectFullFixtureEZTestCase, ExpectModelTestCase
 from eztestsuite import EZTestSuite
 from helpers import parse_module_name_from_filepath, convert_sql_table_to_sqlite_table
 from exceptions import PyEnvNotTestError, FixtureDoesNotExistError
@@ -30,7 +30,7 @@ class EZTest(object):
         self.sqlite_db_fn = None
         self.testcase_module_paths = None
         self.fixtures_dir = None
-        self.full_fix_test_case_instances = []
+        self.decorator_instantated_testcases = []
 
     def init_with_app_and_db(self, app, db):
         self.app = app
@@ -94,12 +94,12 @@ class EZTest(object):
         app_thread.start()
 
         test_case_classes = EZTestCase.__subclasses__()
-        test_case_classes.remove(FullFixtureEZTestCase)
+        test_case_classes.remove(ExpectFullFixtureEZTestCase)
         test_case_classes.remove(ExpectModelTestCase)
 
         test_cases = [tc_class(self) for tc_class in test_case_classes]
         # Add in test cases defined through route decorators
-        test_cases.extend(self.full_fix_test_case_instances)
+        test_cases.extend(self.decorator_instantated_testcases)
 
         # For now package them all in the same suite
         suite = EZTestSuite(self, test_cases)
@@ -118,8 +118,8 @@ class EZTest(object):
         def decorator(view_func):
             if self.testing:
                 endpoint = view_func.__name__
-                tc_inst = FullFixtureEZTestCase(self, fixture, endpoint, exclude_models, exclude_fields)
-                self.full_fix_test_case_instances.append(tc_inst)
+                tc_inst = ExpectFullFixtureEZTestCase(self, fixture, endpoint, exclude_models, exclude_fields)
+                self.decorator_instantated_testcases.append(tc_inst)
             return view_func
 
         return decorator
@@ -130,7 +130,7 @@ class EZTest(object):
             if self.testing:
                 endpoint = view_func.__name__
                 tc_inst = ExpectModelTestCase(self, fixture, endpoint, model, row_index, exclude_fields)
-                self.full_fix_test_case_instances.append(tc_inst)
+                self.decorator_instantated_testcases.append(tc_inst)
             return view_func
 
         return decorator
