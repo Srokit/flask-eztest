@@ -111,15 +111,6 @@ class EZTest(object):
         runner.run(suite)
         # Note when we come out of this function the main thread must call sys.exit(0) for flask app to stop running
 
-    def convert_model_tables_to_sqlite_tables(self):
-        """Convert the tables under self.model_classes to tables without strange columns that sqlite does not support"""
-
-        for table_name in self.model_clases:
-            new_cols = []
-            table = self.model_clases[table_name]
-            for col in table.columns:
-                new_col = col
-
     # Decorators used by flask app view functions
     def expect_full_fixture(self, fixture):
 
