@@ -10,7 +10,7 @@ import time
 from selenium.webdriver.phantomjs.webdriver import WebDriver
 from flask_sqlalchemy import SQLAlchemy
 
-from eztestcase import EZTestCase, FullFixtureEZTestCase
+from eztestcase import EZTestCase, FullFixtureEZTestCase, ExpectModelTestCase
 from eztestsuite import EZTestSuite
 from helpers import parse_module_name_from_filepath, convert_sql_table_to_sqlite_table
 from exceptions import PyEnvNotTestError, FixtureDoesNotExistError
@@ -95,6 +95,7 @@ class EZTest(object):
 
         test_case_classes = EZTestCase.__subclasses__()
         test_case_classes.remove(FullFixtureEZTestCase)
+        test_case_classes.remove(ExpectModelTestCase)
 
         test_cases = [tc_class(self) for tc_class in test_case_classes]
         # Add in test cases defined through route decorators
@@ -104,7 +105,6 @@ class EZTest(object):
         suite = EZTestSuite(self, test_cases)
 
         runner = TextTestRunner()
-
         # Give flask app arbitrary time to setup
         time.sleep(0.5)
 
@@ -112,12 +112,24 @@ class EZTest(object):
         # Note when we come out of this function the main thread must call sys.exit(0) for flask app to stop running
 
     # Decorators used by flask app view functions
-    def expect_full_fixture(self, fixture):
+
+    def expect_full_fixture(self, fixture, exclude_models=[], exclude_fields=[]):
 
         def decorator(view_func):
             if self.testing:
                 endpoint = view_func.__name__
-                tc_inst = FullFixtureEZTestCase(self, fixture, endpoint)
+                tc_inst = FullFixtureEZTestCase(self, fixture, endpoint, exclude_models, exclude_fields)
+                self.full_fix_test_case_instances.append(tc_inst)
+            return view_func
+
+        return decorator
+
+    def expect_model(self, fixture, model, row_index=None, exclude_fields=[]):
+
+        def decorator(view_func):
+            if self.testing:
+                endpoint = view_func.__name__
+                tc_inst = ExpectModelTestCase(self, fixture, endpoint, model, row_index, exclude_fields)
                 self.full_fix_test_case_instances.append(tc_inst)
             return view_func
 

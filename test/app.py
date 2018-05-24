@@ -28,7 +28,7 @@ eztest.init_with_app_and_db(app, db)
 
 
 @app.route('/one')
-@eztest.expect_full_fixture('oneuser')
+@eztest.expect_model('oneuser', 'User', exclude_fields=['hidden'])
 def index_one():
 
     # If testing reflection uncomment
@@ -43,6 +43,7 @@ def index_one():
 
 
 @app.route('/two')
+@eztest.expect_full_fixture('twousers', exclude_fields=['User.email', 'User.hidden'])
 def index_two():
 
     # If testing reflection uncomment
