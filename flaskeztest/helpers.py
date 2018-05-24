@@ -2,6 +2,8 @@
 import os
 import sys
 
+from sqlalchemy.dialects.mysql import BIT, INTEGER
+
 
 def parse_module_name_from_filepath(filepath):
     """
@@ -31,3 +33,16 @@ def parse_module_name_from_filepath(filepath):
         sys.path.insert(0, path)
 
     return '.'.join(module_name[::-1])
+
+
+def convert_sql_table_to_sqlite_table(table):
+    for column in table.columns:
+        column.nullable = True
+        column.unique = False
+        if type(column.type) is BIT:
+            print "Found bit", column
+            column.type = INTEGER()
+        if getattr(column.type, 'collation', None) is not None:
+            column.type = type(column.type)(length=column.type.length)
+    table.indexes = set()
+    table.constraints = set()

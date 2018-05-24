@@ -1,4 +1,3 @@
-
 import threading
 from unittest import TextTestRunner
 import json
@@ -13,7 +12,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 from eztestcase import EZTestCase, FullFixtureEZTestCase
 from eztestsuite import EZTestSuite
-from helpers import parse_module_name_from_filepath
+from helpers import parse_module_name_from_filepath, convert_sql_table_to_sqlite_table
 from exceptions import PyEnvNotTestError, FixtureDoesNotExistError
 
 
@@ -51,12 +50,15 @@ class EZTest(object):
             self.reflecting_schema = True
             reflection_db_uri = self.app.config.get('EZTEST_REFLECTION_DB_URI')
             self.app.config['SQLALCHEMY_DATABASE_URI'] = reflection_db_uri
-            relection_db = SQLAlchemy(self.app)
+            reflection_db = SQLAlchemy(self.app)
             with self.app.app_context():
-                self.db.Model.metadata.reflect(relection_db.engine)
+                self.db.Model.metadata.reflect(reflection_db.engine)
 
             print self.db.Model.metadata.tables
             self.model_clases = self.db.Model.metadata.tables
+            for (_, table) in self.model_clases.iteritems():
+                convert_sql_table_to_sqlite_table(table)
+            print self.model_clases
         else:
             self.reflecting_schema = False
             # Create dict with values being model class name and their values being the class itself
@@ -111,6 +113,15 @@ class EZTest(object):
         runner.run(suite)
         # Note when we come out of this function the main thread must call sys.exit(0) for flask app to stop running
 
+    def convert_model_tables_to_sqlite_tables(self):
+        """Convert the tables under self.model_classes to tables without strange columns that sqlite does not support"""
+
+        for table_name in self.model_clases:
+            new_cols = []
+            table = self.model_clases[table_name]
+            for col in table.columns:
+                new_col = col
+
     # Decorators used by flask app view functions
     def expect_full_fixture(self, fixture):
 
@@ -162,7 +173,6 @@ class EZTest(object):
         with self.app.app_context():
             self.db.drop_all()
             self.db.create_all()
-
     # Private helpers
 
     def parse_model_dicts_from_fixture(self, fixture):
