@@ -53,8 +53,6 @@ class EZTest(object):
             reflection_db = SQLAlchemy(self.app)
             with self.app.app_context():
                 self.db.Model.metadata.reflect(reflection_db.engine)
-
-            print self.db.Model.metadata.tables
             self.model_clases = self.db.Model.metadata.tables
             for (_, table) in self.model_clases.iteritems():
                 convert_sql_table_to_sqlite_table(table)

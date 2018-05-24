@@ -40,7 +40,6 @@ def convert_sql_table_to_sqlite_table(table):
         column.nullable = True
         column.unique = False
         if type(column.type) is BIT:
-            print "Found bit", column
             column.type = INTEGER()
         if getattr(column.type, 'collation', None) is not None:
             column.type = type(column.type)(length=column.type.length)
