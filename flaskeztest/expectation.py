@@ -1,7 +1,5 @@
 """Expectation objects defined here."""
 
-from collections import OrderedDict
-
 
 class Expectation(object):
 
@@ -48,6 +46,7 @@ class FixtureExpectation(Expectation):
         # This way we can chaing a call to FixtureExpectation.models() to an assignment of a FixtureObject type
         return self
 
+
 class ModelExpectation(Expectation):
 
     def __init__(self, model_name, expected_fields=None, unexpected_fields=None):
@@ -80,3 +79,9 @@ class ModelExpectation(Expectation):
         self.unexpected_fields.extend(fields)
         # This allows for .fields to be used inline in a FixtureExpectation.models() call
         return self
+
+
+def expect_fixture(fixture_name):
+    """Serves as a nice idiomatic short cut to using FixtureExpectation constructor for chaining the rest of the
+    expectation statment."""
+    return FixtureExpectation(fixture_name)

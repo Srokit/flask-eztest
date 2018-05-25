@@ -5,6 +5,9 @@
       "name": "Bob",
       "email": "bob@example.com",
       "hidden": "not loaded in view"
-    }
+    },
+    "ignore": [
+      "hidden"
+    ]
   }
 ]

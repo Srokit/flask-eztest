@@ -1,6 +1,6 @@
 
 from flask import Flask, render_template_string
-from flaskeztest import EZTest, FixtureExpectation, ModelExpectation
+from flaskeztest import EZTest, FixtureExpectation, ModelExpectation, expect_fixture
 
 # If testing reflection uncomment
 # from sqlalchemy import select
@@ -28,13 +28,17 @@ eztest.init_with_app_and_db(app, db)
 
 twousers_User_name_expected = FixtureExpectation('twousers').models([ModelExpectation('User').
                                                                     not_fields(['email'])])
-oneuser_User_name_and_email_expected = FixtureExpectation('oneuser').models([ModelExpectation('User').
-                                                                            not_fields(['hidden'])])
+
+oneuser_User_name_and_email_expected = expect_fixture('oneuser').models([ModelExpectation('User').
+                                                                         not_fields(['hidden'])])
 
 
 @app.route('/one')
-@eztest.expect_model('oneuser', 'User', exclude_fields=['hidden'])
-@eztest.expect(oneuser_User_name_and_email_expected)
+# @eztest.expect_model('oneuser', 'User', exclude_fields=['hidden'])
+# @eztest.expect(oneuser_User_name_and_email_expected)
+@eztest.expect_model('oneuser', 'User')
+@eztest.expect_model('oneuser', 'User')
+@eztest.expect_full_fixture('oneuser')
 def index_one():
 
     # If testing reflection uncomment

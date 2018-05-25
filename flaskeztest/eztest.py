@@ -38,6 +38,11 @@ class EZTest(object):
 
         self.testing = self.app.config.get('PY_ENV') == 'test'
 
+        # So eztestid function will work in all view function templates
+        # This should be done even when not testing because the testids need to
+        # be rendered as blanks on production pages
+        self.register_ctx_processor()
+
         # Don't want to run a production flask app under these test settings
         if not self.testing:
             return
@@ -76,9 +81,6 @@ class EZTest(object):
         self.app.config['SERVER_NAME'] = 'localhost:5000'
 
         self.db.init_app(self.app)
-
-        # So eztestid function will work in all view function templates
-        self.register_ctx_processor()
 
     def run(self):
 
@@ -169,12 +171,19 @@ class EZTest(object):
 
         with self.app.app_context():
             for model in models:
+                ignored = model.get('ignore')
                 if 'row' in model:  # Otherwise we would find 'rows' key
-                    eztestids_for_fixture.update(**self.eztestids_from_row_dict(model['model'], model['row']))
+                    eztestids_from_row = self.eztestids_from_row_dict(model['model'], model['row'])
+                    if ignored is not None:
+                        self.remove_eztestids_in_ignore_list(eztestids_from_row, ignored)
+                    eztestids_for_fixture.update(**eztestids_from_row)
                     self.seed_db_with_row_dict(model['model'], model['row'])
                 else:
                     for row_i, row in enumerate(model['rows']):
-                        eztestids_for_fixture.update(**self.eztestids_from_row_dict(model['model'], row, row_i))
+                        eztestids_from_row = self.eztestids_from_row_dict(model['model'], row, row_i)
+                        if ignored is not None:
+                            self.remove_eztestids_in_ignore_list(eztestids_from_row, ignored)
+                        eztestids_for_fixture.update(**eztestids_from_row)
                         self.seed_db_with_row_dict(model['model'], row)
             self.db.session.commit()
 
@@ -202,6 +211,13 @@ class EZTest(object):
             else:
                 eztestids['%s[%d].%s' % (model_name, row_i, field)] = str(field_val)
         return eztestids
+
+    @classmethod
+    def remove_eztestids_in_ignore_list(cls, eztestids, ignored):
+        for eztestid in eztestids.copy():
+            field_name = eztestid[eztestid.index('.')+1:]
+            if field_name in ignored:
+                eztestids.pop(eztestid)
 
     def import_testcase_modules(self):
         for mod_path in self.testcase_module_paths:
