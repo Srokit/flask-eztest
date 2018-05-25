@@ -1,0 +1,82 @@
+"""Expectation objects defined here."""
+
+from collections import OrderedDict
+
+
+class Expectation(object):
+
+    def __init__(self):
+        object.__init__(self)
+        self.name = None
+
+
+class FixtureExpectation(Expectation):
+
+    def __init__(self, fixture_name, expected_models=None, unexpected_models=None):
+        Expectation.__init__(self)
+        self.name = fixture_name
+        self.expecting_all_models = True
+        self.expecting_specific_models = False
+        self.not_expecting_specific_models = False
+        self.expected_models = list()
+        self.unexpected_models = list()
+        if expected_models is not None:
+            self.models(expected_models)
+        if unexpected_models is not None:
+            self.not_models(unexpected_models)
+
+    def models(self, models):
+        """Add a group of new expected model."""
+        if not self.expecting_all_models:
+            raise Expectation("Cannot explicitly expect and ignore models in the same fixture expectation.")
+        self.expecting_all_models = False
+        self.expecting_specific_models = True
+        for model in models:
+            if isinstance(model, ModelExpectation):
+                self.expected_models.append(model)
+            else:  # str
+                self.expected_models.append(ModelExpectation(model))
+        # This way we can chaing a call to FixtureExpectation.models() to an assignment of a FixtureObject type
+        return self
+
+    def not_models(self, models):
+        if not self.expecting_all_models:
+            raise Expectation("Cannot explicitly expect and ignore models in the same fixture expectation.")
+        self.expecting_all_models = False
+        self.not_expecting_specific_models = True
+        self.unexpected_models.extend(models)
+        # This way we can chaing a call to FixtureExpectation.models() to an assignment of a FixtureObject type
+        return self
+
+class ModelExpectation(Expectation):
+
+    def __init__(self, model_name, expected_fields=None, unexpected_fields=None):
+        Expectation.__init__(self)
+        self.name = model_name
+        self.expecting_all_fields = True
+        self.expecting_specific_fields = False
+        self.not_expecting_specific_fields = False
+        self.unexpected_fields = list()
+        self.expected_fields = list()
+        if expected_fields is not None:
+            self.fields(expected_fields)
+        if unexpected_fields is not None:
+            self.not_fields(unexpected_fields)
+
+    def fields(self, fields):
+        if not self.expecting_all_fields:
+            raise Expectation("Cannot explicitly expect and ignore fields in the same model expectation.")
+        self.expecting_all_fields = False
+        self.expecting_specific_fields = True
+        self.expected_fields.extend(fields)
+        # This allows for .fields to be used inline in a FixtureExpectation.models() call
+        return self
+
+    def not_fields(self, fields):
+        if not self.expecting_all_fields:
+            raise Expectation("Cannot explicitly expect and ignore fields in the same model expectation.")
+        self.expecting_all_fields = False
+        self.not_expecting_specific_fields = True
+        self.unexpected_fields.extend(fields)
+        # This allows for .fields to be used inline in a FixtureExpectation.models() call
+        return self

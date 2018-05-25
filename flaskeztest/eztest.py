@@ -10,7 +10,7 @@ import time
 from selenium.webdriver.phantomjs.webdriver import WebDriver
 from flask_sqlalchemy import SQLAlchemy
 
-from eztestcase import EZTestCase, ExpectFullFixtureEZTestCase, ExpectModelTestCase
+from eztestcase import EZTestCase, ExpectFullFixtureEZTestCase, ExpectModelTestCase, ExpectTestCase
 from eztestsuite import EZTestSuite
 from helpers import parse_module_name_from_filepath, convert_sql_table_to_sqlite_table
 from exceptions import PyEnvNotTestError, FixtureDoesNotExistError
@@ -96,6 +96,7 @@ class EZTest(object):
         test_case_classes = EZTestCase.__subclasses__()
         test_case_classes.remove(ExpectFullFixtureEZTestCase)
         test_case_classes.remove(ExpectModelTestCase)
+        test_case_classes.remove(ExpectTestCase)
 
         test_cases = [tc_class(self) for tc_class in test_case_classes]
         # Add in test cases defined through route decorators
@@ -112,6 +113,16 @@ class EZTest(object):
         # Note when we come out of this function the main thread must call sys.exit(0) for flask app to stop running
 
     # Decorators used by flask app view functions
+
+    def expect(self, expectation, endpoing_kwargs=dict()):
+
+        def decorator(view_func):
+            if self.testing:
+                endpoint = view_func.__name__
+                tc_inst = ExpectTestCase(self, expectation, endpoint, endpoing_kwargs)
+                self.decorator_instantated_testcases.append(tc_inst)
+            return view_func
+        return decorator
 
     def expect_full_fixture(self, fixture, exclude_models=[], exclude_fields=[]):
 

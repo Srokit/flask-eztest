@@ -6,6 +6,7 @@ import flask
 from selenium.common.exceptions import NoSuchElementException
 
 from exceptions import EztestidNotInFixture
+from expectation import FixtureExpectation, ModelExpectation
 
 
 class EZTestCase(TestCase):
@@ -24,9 +25,9 @@ class EZTestCase(TestCase):
         self.eztest.reset_db()
         self.load_fixture()
 
-    def navigate_to_endpoint(self, endpoint):
+    def navigate_to_endpoint(self, endpoint, endpoint_kwargs=dict()):
         with self.eztest.app.app_context():
-            url = flask.url_for(endpoint, _external=True)
+            url = flask.url_for(endpoint, _external=True, **endpoint_kwargs)
         self.driver.get(url)
 
     def load_fixture(self):
@@ -52,6 +53,12 @@ class EZTestCase(TestCase):
     def assert_full_model_is_correct(self, model, row_index=None, exclude_fields=[]):
         for eztestid in self.get_testids_for_model(model, row_index, exclude_fields):
             self.assert_ele_has_correct_text(eztestid)
+
+    def assert_model_field_is_correct(self, model, field):
+        eztestids = [eztestid for eztestid in self.get_testids_for_model(model)
+                     if self.field_name_from_eztestid(eztestid) == field]
+        for testid in eztestids:
+            self.assert_ele_has_correct_text(testid)
 
     def assert_full_fixture_exists(self, exclude_models=[], exclude_fields=[]):
         for eztestid in self.eztestids:
@@ -147,3 +154,36 @@ class ExpectModelTestCase(EZTestCase):
     def runTest(self):
         self.navigate_to_endpoint(self.endpoint)
         self.assert_full_model_is_correct(self.model_name, self.row_index, self.exclude_fields)
+
+
+class ExpectTestCase(EZTestCase):
+
+    def __init__(self, eztest, fix_expectation_obj, endpoint, endpoint_kwargs=dict()):
+        EZTestCase.__init__(self, eztest)
+        assert isinstance(fix_expectation_obj, FixtureExpectation)
+        self.fix_expectation_obj = fix_expectation_obj
+        self.fixture = self.fix_expectation_obj.name
+        self.endpoint = endpoint
+        self.endpoint_kwargs = endpoint_kwargs
+
+    def runTest(self):
+        self.navigate_to_endpoint(self.endpoint, self.endpoint_kwargs)
+        self.assert_expectation_correct()
+
+    # Helpers
+
+    def assert_expectation_correct(self):
+        if self.fix_expectation_obj.expecting_all_models:
+            self.assert_full_fixture_is_correct()
+        elif self.fix_expectation_obj.expecting_specific_models:
+            for model_exp in self.fix_expectation_obj.expected_models:
+                assert isinstance(model_exp, ModelExpectation)
+                if model_exp.expecting_all_fields:
+                    self.assert_full_model_is_correct(model_exp.name)
+                elif model_exp.expecting_specific_fields:
+                    for field_exp in model_exp.expected_fields:
+                        self.assert_model_field_is_correct(model_exp.name, field_exp)
+                else:  #
+                    self.assert_full_model_is_correct(model_exp.name, exclude_fields=model_exp.unexpected_fields)
+        else:  # self.fix_expectation_obj.not_expecting_specific_models == True
+            self.assert_full_fixture_is_correct(exclude_models=self.fix_expectation_obj.unexpected_models)
