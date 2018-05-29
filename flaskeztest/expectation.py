@@ -49,9 +49,10 @@ class FixtureExpectation(Expectation):
 
 class ModelExpectation(Expectation):
 
-    def __init__(self, model_name, expected_fields=None, unexpected_fields=None):
+    def __init__(self, model_name, index=None, expected_fields=None, unexpected_fields=None):
         Expectation.__init__(self)
         self.name = model_name
+        self.index = index
         self.expecting_all_fields = True
         self.expecting_specific_fields = False
         self.not_expecting_specific_fields = False

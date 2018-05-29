@@ -27,8 +27,8 @@ app.config.update(**FLASK_APP_CONFIG)
 eztest = EZTest()
 eztest.init_with_app_and_db(app, db)
 
-twousers_User_name_expected = FixtureExpectation('twousers').models([ModelExpectation('User').
-                                                                    not_fields(['email'])])
+twousers_User_name_expected = FixtureExpectation('twousers').models([ModelExpectation('User', 1).
+                                                                    fields(['name'])])
 
 oneuser_User_name_and_email_expected = expect_fixture('oneuser').models([ModelExpectation('User').
                                                                          not_fields(['hidden'])])

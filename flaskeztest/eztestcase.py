@@ -77,20 +77,20 @@ class EZTestCase(TestCase):
         for eztestid in self.get_testids_for_model(model, row_index, exclude_fields):
             self.assert_ele_has_correct_text(eztestid)
 
-    def assert_model_field_is_correct(self, model, field):
-        eztestids = [eztestid for eztestid in self.get_testids_for_model(model)
+    def assert_model_field_is_correct(self, model, field, row_index=None):
+        eztestids = [eztestid for eztestid in self.get_testids_for_model(model, row_index)
                      if self.field_name_from_eztestid(eztestid) == field]
         for testid in eztestids:
             self.assert_ele_has_correct_text(testid)
 
-    def assert_model_field_is_visible(self, model, field):
-        eztestids = [eztestid for eztestid in self.get_testids_for_model(model)
+    def assert_model_field_is_visible(self, model, field, row_index=None):
+        eztestids = [eztestid for eztestid in self.get_testids_for_model(model, row_index)
                      if self.field_name_from_eztestid(eztestid) == field]
         for testid in eztestids:
             self.assert_ele_is_visible(testid)
 
-    def assert_model_field_is_invisible(self, model, field):
-        eztestids = [eztestid for eztestid in self.get_testids_for_model(model)
+    def assert_model_field_is_invisible(self, model, field, row_index=None):
+        eztestids = [eztestid for eztestid in self.get_testids_for_model(model, row_index)
                      if self.field_name_from_eztestid(eztestid) == field]
         for testid in eztestids:
             self.assert_ele_is_invisible(testid)
@@ -118,14 +118,14 @@ class EZTestCase(TestCase):
             for model_exp in expectation.expected_models:
                 assert isinstance(model_exp, ModelExpectation)
                 if model_exp.expecting_all_fields:
-                    self.assert_full_model_is_correct(model_exp.name)
+                    self.assert_full_model_is_correct(model_exp.name, model_exp.index)
                 elif model_exp.expecting_specific_fields:
                     for field_exp in model_exp.expected_fields:
-                        self.assert_model_field_is_correct(model_exp.name, field_exp.name)
+                        self.assert_model_field_is_correct(model_exp.name, field_exp.name, model_exp.index)
                         if field_exp.check_visible:
-                            self.assert_model_field_is_visible(model_exp.name, field_exp.name)
+                            self.assert_model_field_is_visible(model_exp.name, field_exp.name, model_exp.index)
                         elif field_exp.check_invisible:
-                            self.assert_model_field_is_invisible(model_exp.name, field_exp.name)
+                            self.assert_model_field_is_invisible(model_exp.name, field_exp.name, model_exp.index)
                 else:
                     self.assert_full_model_is_correct(model_exp.name, exclude_fields=model_exp.unexpected_fields)
         else:  # self.fix_expectation_obj.not_expecting_specific_models == True
@@ -152,7 +152,12 @@ class EZTestCase(TestCase):
                         testids_to_return.append(testid)
                 else:
                     testids_to_return.append(testid)
-
+        if len(testids_to_return) == 0:
+            if row_index is not None:
+                err_msg = "No eztestids found for model=\"%s\" at row_index=\"%d\"." % (model, row_index)
+            else:
+                err_msg = "No eztestids found for model=\"%s\"." % model
+            self.fail(err_msg)
         return testids_to_return
 
     def fail_doesnt_exist(self, eztestid):
@@ -176,7 +181,10 @@ class EZTestCase(TestCase):
 
     @classmethod
     def row_index_from_eztestid(cls, eztestid):
-        return int(eztestid[eztestid.index('[') + 1: eztestid.index(']')])
+        try:
+            return int(eztestid[eztestid.index('[') + 1: eztestid.index(']')])
+        except IndexError:
+            return None
 
 
 class ExpectFullFixtureEZTestCase(EZTestCase):
