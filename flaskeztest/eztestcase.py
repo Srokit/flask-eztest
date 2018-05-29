@@ -181,10 +181,11 @@ class EZTestCase(TestCase):
 
 class ExpectFullFixtureEZTestCase(EZTestCase):
 
-    def __init__(self, eztest, fixture, endpoint, exclude_models=[], exclude_fields=[], method_name='runTest'):
+    def __init__(self, eztest, fixture, endpoint, endpoint_kwargs=dict(), exclude_models=[], exclude_fields=[], method_name='runTest'):
         EZTestCase.__init__(self, eztest, method_name)
         self.fixture = fixture
         self.endpoint = endpoint
+        self.endpoint_kwargs = endpoint_kwargs
         self.exclude_models = exclude_models
         self.exclude_fields = exclude_fields
 
@@ -192,22 +193,23 @@ class ExpectFullFixtureEZTestCase(EZTestCase):
         EZTestCase.setUp(self)
 
     def runTest(self):
-        self.navigate_to_endpoint(self.endpoint)
+        self.navigate_to_endpoint(self.endpoint, self.endpoint_kwargs)
         self.assert_full_fixture_is_correct(self.exclude_models, self.exclude_fields)
 
 
 class ExpectModelTestCase(EZTestCase):
 
-    def __init__(self, eztest, fixture, endpoint, model_name, row_index=None, exclude_fields=[], method_name='runTest'):
+    def __init__(self, eztest, fixture, model_name, endpoint, endpoint_kwargs=dict(), row_index=None, exclude_fields=[], method_name='runTest'):
         EZTestCase.__init__(self, eztest, method_name)
         self.fixture = fixture
         self.endpoint = endpoint
+        self.endpoint_kwargs = endpoint_kwargs
         self.model_name = model_name
         self.row_index = row_index
         self.exclude_fields = exclude_fields
 
     def runTest(self):
-        self.navigate_to_endpoint(self.endpoint)
+        self.navigate_to_endpoint(self.endpoint, self.endpoint_kwargs)
         self.assert_full_model_is_correct(self.model_name, self.row_index, self.exclude_fields)
 
 
@@ -224,3 +226,14 @@ class ExpectTestCase(EZTestCase):
     def runTest(self):
         self.navigate_to_endpoint(self.endpoint, self.endpoint_kwargs)
         self.assert_expectation_correct(self.fix_expectation_obj)
+
+
+class RouteEZTestCase(EZTestCase):
+
+    def __init__(self, eztest, endpoint, endpoint_kwargs=dict()):
+        EZTestCase.__init__(self, eztest)
+        self.endpoint = endpoint
+        self.endpoint_kwargs = endpoint_kwargs
+
+    def runTest(self):
+        self.navigate_to_endpoint(self.endpoint, self.endpoint_kwargs)

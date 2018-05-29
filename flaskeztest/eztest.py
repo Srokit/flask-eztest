@@ -10,7 +10,7 @@ import time
 from selenium.webdriver.phantomjs.webdriver import WebDriver
 from flask_sqlalchemy import SQLAlchemy
 
-from eztestcase import EZTestCase, ExpectFullFixtureEZTestCase, ExpectModelTestCase, ExpectTestCase
+from eztestcase import EZTestCase, ExpectFullFixtureEZTestCase, ExpectModelTestCase, ExpectTestCase, RouteEZTestCase
 from eztestsuite import EZTestSuite
 from helpers import parse_module_name_from_filepath, convert_sql_table_to_sqlite_table
 from exceptions import PyEnvNotTestError, FixtureDoesNotExistError
@@ -30,6 +30,7 @@ class EZTest(object):
         self.sqlite_db_fn = None
         self.testcase_module_paths = None
         self.fixtures_dir = None
+        self.route_testcases_dir = None
         self.decorator_instantated_testcases = []
 
     def init_with_app_and_db(self, app, db):
@@ -74,6 +75,7 @@ class EZTest(object):
 
         self.testcase_module_paths = self.app.config.get('EZTEST_TESTCASE_MODULE_PATHS')
         self.fixtures_dir = self.app.config.get('EZTEST_FIXTURES_DIR')
+        self.route_testcases_dir = self.app.config.get('EZTEST_ROUTE_TESTCASES_DIR')
 
         self.import_testcase_modules()
 
@@ -99,6 +101,7 @@ class EZTest(object):
         test_case_classes.remove(ExpectFullFixtureEZTestCase)
         test_case_classes.remove(ExpectModelTestCase)
         test_case_classes.remove(ExpectTestCase)
+        test_case_classes.remove(RouteEZTestCase)
 
         test_cases = [tc_class(self) for tc_class in test_case_classes]
         # Add in test cases defined through route decorators
@@ -116,6 +119,22 @@ class EZTest(object):
 
     # Decorators used by flask app view functions
 
+    def testcase(self, testcase_name, endpoint_kwargs=dict()):
+
+        module_name, class_name = testcase_name.split(':')
+        prepped_mod_name = parse_module_name_from_filepath('%s/%s' % (self.route_testcases_dir, module_name))
+        tc_class = getattr(import_module(prepped_mod_name), class_name)
+
+        assert issubclass(tc_class, RouteEZTestCase)
+
+        def decorator(view_func):
+            if self.testing:
+                endpoint = view_func.__name__
+                tc_inst = tc_class(self, endpoint, endpoint_kwargs)
+                self.decorator_instantated_testcases.append(tc_inst)
+            return view_func
+        return decorator
+
     def expect(self, expectation, endpoing_kwargs=dict()):
 
         def decorator(view_func):
@@ -126,23 +145,23 @@ class EZTest(object):
             return view_func
         return decorator
 
-    def expect_full_fixture(self, fixture, exclude_models=[], exclude_fields=[]):
+    def expect_full_fixture(self, fixture, endpoint_kwargs=dict(), exclude_models=[], exclude_fields=[]):
 
         def decorator(view_func):
             if self.testing:
                 endpoint = view_func.__name__
-                tc_inst = ExpectFullFixtureEZTestCase(self, fixture, endpoint, exclude_models, exclude_fields)
+                tc_inst = ExpectFullFixtureEZTestCase(self, fixture, endpoint, endpoint_kwargs, exclude_models, exclude_fields)
                 self.decorator_instantated_testcases.append(tc_inst)
             return view_func
 
         return decorator
 
-    def expect_model(self, fixture, model, row_index=None, exclude_fields=[]):
+    def expect_model(self, fixture, model, endpoint_kwargs=dict(), row_index=None, exclude_fields=[]):
 
         def decorator(view_func):
             if self.testing:
                 endpoint = view_func.__name__
-                tc_inst = ExpectModelTestCase(self, fixture, endpoint, model, row_index, exclude_fields)
+                tc_inst = ExpectModelTestCase(self, fixture, model, endpoint, endpoint_kwargs, row_index, exclude_fields)
                 self.decorator_instantated_testcases.append(tc_inst)
             return view_func
 

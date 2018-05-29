@@ -16,6 +16,7 @@ FLASK_APP_CONFIG = {
     # 'EZTEST_REFLECTION_DB_URI': 'sqlite:///reflect.db',
     'EZTEST_FIXTURES_DIR': 'test/fixtures',
     'EZTEST_TESTCASE_MODULE_PATHS': ['test/testcases.py', 'test/fail_testcases.py'],
+    'EZTEST_ROUTE_TESTCASES_DIR': 'test/decoratedtests',
     'SQLALCHEMY_TRACK_MODIFICATIONS': False,
     'PY_ENV': 'test'
 }
@@ -42,6 +43,7 @@ oneuser_visible_hidden_field = expect_fixture('oneuser').models([ModelExpectatio
 @eztest.expect_model('oneuser', 'User')
 @eztest.expect_model('oneuser', 'User')
 @eztest.expect_full_fixture('oneuser')
+@eztest.testcase('index:IndexOneTestCase')
 def index_one():
 
     # If testing reflection uncomment
