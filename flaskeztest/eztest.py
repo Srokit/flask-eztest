@@ -73,7 +73,7 @@ class EZTest(object):
         # self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.app.config.get('EZTEST_SQLITE_DB_URI')
         self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.sqlite_db_fn
 
-        self.testcase_module_paths = self.app.config.get('EZTEST_TESTCASE_MODULE_PATHS')
+        self.testcase_module_paths = self.app.config.get('EZTEST_TESTCASE_MODULE_PATHS') or list()
         self.fixtures_dir = self.app.config.get('EZTEST_FIXTURES_DIR')
         self.route_testcases_dir = self.app.config.get('EZTEST_ROUTE_TESTCASES_DIR')
 
@@ -98,6 +98,7 @@ class EZTest(object):
         app_thread.start()
 
         test_case_classes = EZTestCase.__subclasses__()
+        # Remove subclasses of EZTestCase that were defined in library not by user
         test_case_classes.remove(ExpectFullFixtureEZTestCase)
         test_case_classes.remove(ExpectModelTestCase)
         test_case_classes.remove(ExpectTestCase)
