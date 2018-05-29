@@ -1,6 +1,6 @@
 
 from flask import Flask, render_template_string
-from flaskeztest import EZTest, FixtureExpectation, ModelExpectation, expect_fixture
+from flaskeztest import EZTest, FixtureExpectation, ModelExpectation, FieldExpectation, expect_fixture
 
 # If testing reflection uncomment
 # from sqlalchemy import select
@@ -31,6 +31,9 @@ twousers_User_name_expected = FixtureExpectation('twousers').models([ModelExpect
 
 oneuser_User_name_and_email_expected = expect_fixture('oneuser').models([ModelExpectation('User').
                                                                          not_fields(['hidden'])])
+
+oneuser_visible_hidden_field = expect_fixture('oneuser').models([ModelExpectation('User')
+                                                                .fields([FieldExpectation('hidden').invisible(), 'email', 'name'])])
 
 
 @app.route('/one')
@@ -69,3 +72,19 @@ def index_two():
     return render_template_string("""<p {{_eztestid('User.name', 0)}}>{{user_name1}}</p>
                                      <p {{_eztestid('User.name', 1)}}>{{user_name2}}</p>""",
                                   user_name1=user_name1, user_name2=user_name2)
+
+
+@app.route('/one_visible')
+@eztest.expect(oneuser_visible_hidden_field)
+def one_visible():
+    user = db.session.query(User).first()
+
+    return render_template_string("""<p {{_eztestid('User.name')}}>{{user_name}}</p>
+                                  <p {{_eztestid('User.email')}}>{{user_email}}</p>
+                                  <p {{_eztestid('User.hidden')}} style="display: block">{{user_hidden}}</p>
+                                    <script>
+                                             setTimeout(function(){
+                                                document.getElementsByTagName('p')[2].style.display = 'block';
+                                             }, 500);
+                                     </script>
+                                  """, user_name=user.name, user_email=user.email, user_hidden=user.hidden)

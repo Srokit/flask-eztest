@@ -152,7 +152,6 @@ class EZTest(object):
 
     def start_driver(self):
         self.driver = WebDriver()
-        self.driver.implicitly_wait(1)
 
     def quit_driver(self):
         self.driver.quit()

@@ -3,7 +3,9 @@
 from unittest import TestCase
 
 import flask
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 from exceptions import EztestidNotInFixture
 from expectation import FixtureExpectation, ModelExpectation
@@ -17,11 +19,13 @@ class EZTestCase(TestCase):
         TestCase.__init__(self, method_name)
         self.eztest = eztest
         self.driver = None
+        self.wait_time = 1  # Default
         self.fixture = self.__class__.FIXTURE
         self.eztestids = dict()
 
     def setUp(self):
         self.driver = self.eztest.driver
+        self.driver.implicitly_wait(self.wait_time)
         self.eztest.reset_db()
         self.load_fixture()
 
@@ -46,6 +50,25 @@ class EZTestCase(TestCase):
         self.assertEqual(ele.text.strip(), self.eztestids[eztestid],
                          self.get_incorrect_text_fail_mess(eztestid, ele.text.strip(), self.eztestids[eztestid]))
 
+    def assert_ele_is_visible(self, eztestid):
+        ele = self.get_ele(eztestid)
+        try:
+            WebDriverWait(self.driver, self.wait_time).until(
+                EC.visibility_of(ele)
+            )
+        except TimeoutException:
+            self.fail("Element with eztestid=\"%s\" is not visible." % eztestid)
+
+    def assert_ele_is_invisible(self, eztestid):
+        ele = self.get_ele(eztestid)
+        try:
+            WebDriverWait(self.driver, self.wait_time).until(
+                EC.visibility_of(ele)
+            )
+            self.fail("Element with eztestid=\"%s\" is not hidden." % eztestid)
+        except TimeoutException:
+            pass
+
     def assert_full_model_exists(self, model, row_index=None, exclude_fields=[]):
         for eztestid in self.get_testids_for_model(model, row_index, exclude_fields):
             self.assert_ele_exists(eztestid)
@@ -59,6 +82,18 @@ class EZTestCase(TestCase):
                      if self.field_name_from_eztestid(eztestid) == field]
         for testid in eztestids:
             self.assert_ele_has_correct_text(testid)
+
+    def assert_model_field_is_visible(self, model, field):
+        eztestids = [eztestid for eztestid in self.get_testids_for_model(model)
+                     if self.field_name_from_eztestid(eztestid) == field]
+        for testid in eztestids:
+            self.assert_ele_is_visible(testid)
+
+    def assert_model_field_is_invisible(self, model, field):
+        eztestids = [eztestid for eztestid in self.get_testids_for_model(model)
+                     if self.field_name_from_eztestid(eztestid) == field]
+        for testid in eztestids:
+            self.assert_ele_is_invisible(testid)
 
     def assert_full_fixture_exists(self, exclude_models=[], exclude_fields=[]):
         for eztestid in self.eztestids:
@@ -75,6 +110,26 @@ class EZTestCase(TestCase):
 
             if model_name not in exclude_models and ('%s.%s' % (model_name, field_name)) not in exclude_fields:
                 self.assert_ele_has_correct_text(eztestid)
+
+    def assert_expectation_correct(self, expectation):
+        if expectation.expecting_all_models:
+            self.assert_full_fixture_is_correct()
+        elif expectation.expecting_specific_models:
+            for model_exp in expectation.expected_models:
+                assert isinstance(model_exp, ModelExpectation)
+                if model_exp.expecting_all_fields:
+                    self.assert_full_model_is_correct(model_exp.name)
+                elif model_exp.expecting_specific_fields:
+                    for field_exp in model_exp.expected_fields:
+                        self.assert_model_field_is_correct(model_exp.name, field_exp.name)
+                        if field_exp.check_visible:
+                            self.assert_model_field_is_visible(model_exp.name, field_exp.name)
+                        elif field_exp.check_invisible:
+                            self.assert_model_field_is_invisible(model_exp.name, field_exp.name)
+                else:
+                    self.assert_full_model_is_correct(model_exp.name, exclude_fields=model_exp.unexpected_fields)
+        else:  # self.fix_expectation_obj.not_expecting_specific_models == True
+            self.assert_full_fixture_is_correct(exclude_models=expectation.unexpected_models)
 
     def get_ele(self, eztestid):
         if eztestid not in self.eztestids:
@@ -168,22 +223,4 @@ class ExpectTestCase(EZTestCase):
 
     def runTest(self):
         self.navigate_to_endpoint(self.endpoint, self.endpoint_kwargs)
-        self.assert_expectation_correct()
-
-    # Helpers
-
-    def assert_expectation_correct(self):
-        if self.fix_expectation_obj.expecting_all_models:
-            self.assert_full_fixture_is_correct()
-        elif self.fix_expectation_obj.expecting_specific_models:
-            for model_exp in self.fix_expectation_obj.expected_models:
-                assert isinstance(model_exp, ModelExpectation)
-                if model_exp.expecting_all_fields:
-                    self.assert_full_model_is_correct(model_exp.name)
-                elif model_exp.expecting_specific_fields:
-                    for field_exp in model_exp.expected_fields:
-                        self.assert_model_field_is_correct(model_exp.name, field_exp)
-                else:  #
-                    self.assert_full_model_is_correct(model_exp.name, exclude_fields=model_exp.unexpected_fields)
-        else:  # self.fix_expectation_obj.not_expecting_specific_models == True
-            self.assert_full_fixture_is_correct(exclude_models=self.fix_expectation_obj.unexpected_models)
+        self.assert_expectation_correct(self.fix_expectation_obj)
