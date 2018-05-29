@@ -50,7 +50,6 @@ class FixtureExpectation(Expectation):
 class ModelExpectation(Expectation):
 
     def __init__(self, model_name, expected_fields=None, unexpected_fields=None):
-        print "model expectation init"
         Expectation.__init__(self)
         self.name = model_name
         self.expecting_all_fields = True
@@ -62,10 +61,8 @@ class ModelExpectation(Expectation):
             self.fields(expected_fields)
         if unexpected_fields is not None:
             self.not_fields(unexpected_fields)
-        print "end model expecattion init"
 
     def fields(self, fields):
-        print "fields"
         for field in fields:
             if type(field) is not FieldExpectation:
                 self.expected_fields.append(FieldExpectation(field))
@@ -75,7 +72,6 @@ class ModelExpectation(Expectation):
             raise Exception("Cannot explicitly expect and ignore fields in the same model expectation.")
         self.expecting_all_fields = False
         self.expecting_specific_fields = True
-        print "end fields"
         # This allows for .fields to be used inline in a FixtureExpectation.models() call
         return self
 
@@ -92,7 +88,6 @@ class ModelExpectation(Expectation):
 class FieldExpectation(Expectation):
 
     def __init__(self, field_name, check_visible=False, check_invisible=False):
-        print "Field expectation init"
         Expectation.__init__(self)
         if check_invisible and check_invisible:
             raise Exception("Cannot both check the visibility and check the invisiblity of a field.")
