@@ -62,7 +62,6 @@ class EZTest(object):
             self.model_clases = self.db.Model.metadata.tables
             for (_, table) in self.model_clases.iteritems():
                 convert_sql_table_to_sqlite_table(table)
-            print self.model_clases
         else:
             self.reflecting_schema = False
             # Create dict with values being model class name and their values being the class itself
