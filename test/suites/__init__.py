@@ -1,0 +1,2 @@
+
+suite_modules = ['index']

@@ -5,14 +5,12 @@ import json
 import tempfile
 import os
 from importlib import import_module
+import inspect
 
 from flask_sqlalchemy import SQLAlchemy
 
 import capybara
-import capybara.selenium.driver
 
-from eztestcase import EZTestCase
-from eztestsuite import EZTestSuite
 from helpers import parse_module_name_from_filepath, convert_sql_table_to_sqlite_table
 from exceptions import FixtureDoesNotExistError
 
@@ -25,24 +23,34 @@ class EZTest(object):
         self.db = None
         self.driver = None
         self.model_clases = None
+        self.config = dict()
+        self.testsuites = list()
         self.reflecting_schema = None
         self.sqlite_db_file = None
         self.sqlite_db_fn = None
-        self.testcase_module_paths = None
+        self.testsuites_package = None
         self.fixtures_dir = None
 
     def init_with_app_and_db(self, app, db):
         self.app = app
+        self.db = db
         capybara.default_driver = "selenium"
         capybara.app = self.app
         capybara.ignore_hidden_elements = False
-        self.db = db
 
-        warnings.filterwarnings("ignore", message="Selenium support for PhantomJS has been deprecated, please use headless versions of Chrome or Firefox instead")
+        warnings.filterwarnings("ignore", message="Selenium support for PhantomJS has been deprecated, "
+                                                  "please use headless versions of Chrome or Firefox instead")
 
-        if self.app.config.get('EZTEST_REFLECTION_DB_URI'):
+        config_module_name = self.app.config.get('EZTEST_CONFIG_MODULE')
+        config_module = import_module(parse_module_name_from_filepath(config_module_name))
+
+        for (name, obj) in inspect.getmembers(config_module):
+            if not inspect.isbuiltin(obj) and name.startswith('EZTEST'):
+                self.config[name] = obj
+
+        if self.config.get('EZTEST_REFLECTION_DB_URI'):
             self.reflecting_schema = True
-            reflection_db_uri = self.app.config.get('EZTEST_REFLECTION_DB_URI')
+            reflection_db_uri = self.config.get('EZTEST_REFLECTION_DB_URI')
             self.app.config['SQLALCHEMY_DATABASE_URI'] = reflection_db_uri
             reflection_db = SQLAlchemy(self.app)
             with self.app.app_context():
@@ -56,14 +64,14 @@ class EZTest(object):
             model_class_objs = self.db.Model.__subclasses__()
             self.model_clases = dict([(obj.__name__, obj) for obj in model_class_objs])
 
-        self.sqlite_db_file, self.sqlite_db_fn = tempfile.mkstemp()
+        self.init_db_file()
 
         self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.sqlite_db_fn
 
-        self.testcase_module_paths = self.app.config.get('EZTEST_TESTCASE_MODULE_PATHS') or list()
-        self.fixtures_dir = self.app.config.get('EZTEST_FIXTURES_DIR')
+        self.testsuites_package = self.config.get('EZTEST_SUITES_PACKAGE')
+        self.fixtures_dir = self.config.get('EZTEST_FIXTURES_DIR')
 
-        self.import_testcase_modules()
+        self.collect_testsuites()
 
         # So that we can use url_for before the app starts
         self.app.config['SERVER_NAME'] = 'localhost:5000'
@@ -80,21 +88,19 @@ class EZTest(object):
         app_thread.setDaemon(True)
         app_thread.start()
 
-        test_case_classes = EZTestCase.__subclasses__()
-
-        test_cases = [tc_class(self) for tc_class in test_case_classes]
-
-        # For now package them all in the same suite
-        suite = EZTestSuite(self, test_cases)
-
         runner = TextTestRunner()
 
-        # Give app a second to setup
+        for suite in self.testsuites:
+            suite.init_test_instances(self)
+            runner.run(suite)
 
-        runner.run(suite)
+        self.remove_db_file()
         # Note when we come out of this function the main thread must call sys.exit(0) for flask app to stop running
 
     # These 3 are used by EZTestSuite before and after running tests
+
+    def init_db_file(self):
+        self.sqlite_db_file, self.sqlite_db_fn = tempfile.mkstemp()
 
     def remove_db_file(self):
         os.remove(self.sqlite_db_fn)
@@ -135,9 +141,13 @@ class EZTest(object):
         except (OSError, IOError):
             raise FixtureDoesNotExistError(self.fixtures_dir, fixture+'.json')
 
-    def import_testcase_modules(self):
-        for mod_path in self.testcase_module_paths:
-            import_module(parse_module_name_from_filepath(mod_path))
+    def collect_testsuites(self):
+        package_name = parse_module_name_from_filepath(self.testsuites_package)
+        testsuites_init_module = import_module(package_name)
+        suite_modules = testsuites_init_module.suite_modules
+        for mod_name in suite_modules:
+            module = import_module('%s.%s' % (package_name, mod_name))
+            self.testsuites.append(module.suite)
 
     def seed_db_with_row_dict(self, model_name, row):
         if self.reflecting_schema:

@@ -6,7 +6,8 @@ requirements = [
     'Flask',
     'capybara-py',
     'selenium',
-    'Flask-SQLAlchemy'
+    'Flask-SQLAlchemy',
+    'termcolor'
 ]
 
 description = "Flask test generation based on db models."

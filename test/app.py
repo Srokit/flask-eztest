@@ -11,12 +11,8 @@ from flask import Flask, render_template_string
 from model import db, User
 
 FLASK_APP_CONFIG = {
-    # uncomment if testing reflection
-    # 'EZTEST_REFLECTION_DB_URI': 'sqlite:///reflect.db',
-    'EZTEST_FIXTURES_DIR': 'test/fixtures',
-    'EZTEST_TESTCASE_MODULE_PATHS': ['test/testcases.py'],
-    'SQLALCHEMY_TRACK_MODIFICATIONS': False,
-    'PY_ENV': 'test'
+    'EZTEST_CONFIG_MODULE': 'test/config.py',
+    'SQLALCHEMY_TRACK_MODIFICATIONS': False
 }
 
 app = Flask(__name__)
