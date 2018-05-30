@@ -27,7 +27,8 @@ class EZTestCase(TestCase):
         self.driver = self.page.driver.browser
         self.driver.implicitly_wait(self.wait_time)
         self.eztest.reset_db()
-        self.load_fixture()
+        if self.fixture is not None:
+            self.load_fixture()
 
     def tearDown(self):
         capybara.reset_sessions()
