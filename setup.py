@@ -4,6 +4,7 @@ from setuptools import setup
 
 requirements = [
     'Flask',
+    'capybara-py',
     'selenium',
     'Flask-SQLAlchemy'
 ]

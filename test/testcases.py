@@ -3,24 +3,24 @@ from flaskeztest.eztestcase import EZTestCase
 
 
 class TestCase1(EZTestCase):
-    FIXTURE = 'twousers'
-
-    def setUp(self):
-        EZTestCase.setUp(self)
+    FIXTURE = 'oneuser'
 
     def runTest(self):
-        self.navigate_to_endpoint('index_two')
-        self.assert_ele_exists('User[0].name')
-        self.assert_ele_has_correct_text('User[0].name')
+        self.navigate('/one')
+        self.assertTrue(self.page.has_current_path("/one"))
+        self.assertTrue(self.page.has_text('Bob'))
+
+        self.assert_field_exists('User', 'name')
+        self.assert_field_exists('User', 'name')
 
 
 class TestCase2(EZTestCase):
-    FIXTURE = 'twousers'
-
-    def setUp(self):
-        EZTestCase.setUp(self)
+    FIXTURE = 'oneuser'
 
     def runTest(self):
-        self.navigate_to_endpoint('index_two')
-        self.assert_ele_exists('User[0].name')
-        self.assert_ele_has_correct_text('User[0].name')
+        self.navigate('/one')
+        self.assertTrue(self.page.has_current_path("/one"))
+        self.assertTrue(self.page.has_text('Bob'))
+
+        self.assert_field_exists('User', 'name')
+        self.assert_field_is_hidden('User', 'name')

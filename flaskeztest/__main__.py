@@ -6,6 +6,7 @@ import os
 import logging
 
 from helpers import parse_module_name_from_filepath
+from eztest import EZTest
 
 
 def flaskeztest_main():
@@ -28,10 +29,14 @@ def flaskeztest_main():
         sys.exit(1)
 
     try:
-        eztest = flask_module.eztest
+        app = flask_module.app
+        db = flask_module.db
     except AttributeError:
-        print "ERROR: Could not find eztest object from attribute \"eztest\" on \"%s\" module" % flask_module
+        print "ERROR: Could not find app or db attribute on flask module."
         sys.exit(1)
+
+    eztest = EZTest()
+    eztest.init_with_app_and_db(app, db)
 
     # Start up flask app and run our tests against it
     eztest.run()
