@@ -38,6 +38,8 @@ class EZTest(object):
         capybara.app = self.app
         capybara.ignore_hidden_elements = False
 
+        self.clean_sqlalchemy_config()
+
         warnings.filterwarnings("ignore", message="Selenium support for PhantomJS has been deprecated, "
                                                   "please use headless versions of Chrome or Firefox instead")
 
@@ -134,6 +136,14 @@ class EZTest(object):
             self.db.drop_all()
             self.db.create_all()
     # Private helpers
+
+    def clean_sqlalchemy_config(self):
+
+        for key in self.app.config.copy():
+            if key.startswith('SQLALCHEMY'):
+                self.app.config.pop(key)
+
+        self.app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     def parse_model_dicts_from_fixture(self, fixture):
         try:
