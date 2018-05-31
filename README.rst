@@ -1,7 +1,7 @@
 Flask EZ Test
 =============
 
-Making flask app that serve html and use a flasksqlalchemy backend engine easier to test
+Making flask app's that serve html and use a flasksqlalchemy backend engine easier to test
 
 Setup
 -----
@@ -114,25 +114,25 @@ For instance:
 
 .. code:: python
 
-class TC(EZTestCase):
+    class TC(EZTestCase):
 
-    FIXTURE = 'myfix'  # Referring to the first fixture above
+        FIXTURE = 'myfix'  # Referring to the first fixture above
 
-    def runTest(self):
+        def runTest(self):
 
-        # Passes
-        self.assertEqual(self.expected_models['User']['name'], 'Bob')
+            # Passes
+            self.assertEqual(self.expected_models['User']['name'], 'Bob')
 
 .. code:: python
 
-class TC2(EZTestCase):
+    class TC2(EZTestCase):
 
-    FIXTURE = 'myfix2' # Referring to the second fixture above
+        FIXTURE = 'myfix2' # Referring to the second fixture above
 
-    def runTest(self):
+        def runTest(self):
 
-        # Passes as well, but would give index error on first test case
-        self.assertEqual(self.expected_models['User'][1]['name], 'Alice')
+            # Passes as well, but would give index error on first test case
+            self.assertEqual(self.expected_models['User'][1]['name], 'Alice')
 
 Two other useful method of the EZTestCase class is 'get_endpoint' and 'does_field_exist'.
 
@@ -157,7 +157,7 @@ Using capybara
 --------------
 
 Flaskeztest allows for querying the html returned from pages using capybara.
-Check out the .. _docs: https://elliterate.github.io/capybara.py/ for all the useful methods that can be applied to the
+Check out the docs at https://elliterate.github.io/capybara.py/ for all the useful methods that can be applied to the
 the EZTestCase.page object.
 
 Running with a reflected SQL database
