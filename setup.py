@@ -12,7 +12,7 @@ requirements = [
 
 description = "Flask test generation based on db models."
 
-long_description = open('README.md').read()
+long_description = open('README.rst').read()
 
 setup(
     name='flaskeztest',
