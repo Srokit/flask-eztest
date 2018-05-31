@@ -10,13 +10,13 @@ requirements = [
     'termcolor'
 ]
 
-description = "Flask test generation based on db models."
+description = "Tool to make integration testing flask app's using flask_sqlalchemy package easy to set up and organized"
 
 long_description = open('README.rst').read()
 
 setup(
     name='flaskeztest',
-    version='0.1.0',
+    version='0.1.1',
     author='Stanley Rokita',
     author_email='srok35@gmail.com',
     url='https://github.com/Srokit/flask-eztest',
