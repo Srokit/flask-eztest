@@ -19,6 +19,7 @@ setup(
     version='0.1.0',
     author='Stanley Rokita',
     author_email='srok35@gmail.com',
+    url='https://github.com/Srokit/flask-eztest',
     description=description,
     long_description=long_description,
     install_requires=requirements,
