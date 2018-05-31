@@ -7,7 +7,28 @@ Setup
 -----
 .. code::
     $ pip install flaskeztest
-    
+
+Make sure you set the environemnt variable FLASK_APP to the file path of your main app module
+
+.. code::
+    $ export FLASK_APP=myapp/app.py
+
+flaskeztest will expect there to be a variable named 'app' under this module and another named 'db'.
+'app' should be a Flask object and 'db' should be an SQLAlchemy object.
+
+.. code:: python
+
+    # myapp/app.py
+    from model import db
+    app = Flask(__name__)
+    db.init_app(app)
+    ...
+
+    # myapp/model.py
+    from flask_sqlalchemy import SQLAlchemy
+    db = SQLAlchemy()
+    ...
+
 Then run all test suites with eztest command
 
 .. code::
@@ -16,7 +37,7 @@ Then run all test suites with eztest command
 In General, the eztest object get's its settings from a special test config module which is set in app.config
 as EZTEST_CONFIG_MODULE
 
-I.E:
+i.e:
 
 .. code:: python
     # test/config.py
