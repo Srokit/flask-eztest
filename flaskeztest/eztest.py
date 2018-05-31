@@ -123,7 +123,7 @@ class EZTest(object):
                     self.seed_db_with_row_dict(model['model'], model['row'])
                 else:
                     expected_models[model['model']] = list()
-                    for row in enumerate(model['rows']):
+                    for row in model['rows']:
                         expected_models[model['model']].append(row)
                         self.seed_db_with_row_dict(model['model'], row)
             self.db.session.commit()
