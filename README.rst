@@ -69,7 +69,8 @@ Fixtures are a json file representing data to insert into the database before a 
 Example:
 
 myfix.json
-.. code:: json
+
+.. code::
 
     [
         {
@@ -84,7 +85,8 @@ myfix.json
 or with  multiple entries for one model:
 
 myfix2.json
-.. code:: json
+
+.. code::
 
     [
         {
@@ -110,6 +112,8 @@ into the expected_models dict.
 
 For instance:
 
+.. code:: python
+
 class TC(EZTestCase):
 
     FIXTURE = 'myfix'  # Referring to the first fixture above
@@ -119,6 +123,7 @@ class TC(EZTestCase):
         # Passes
         self.assertEqual(self.expected_models['User']['name'], 'Bob')
 
+.. code:: python
 
 class TC2(EZTestCase):
 
@@ -132,6 +137,8 @@ class TC2(EZTestCase):
 Two other useful method of the EZTestCase class is 'get_endpoint' and 'does_field_exist'.
 
 Example:
+
+.. code:: python
 
     class TC(EZTestCase):
         FIXTURE = 'myfix2'
@@ -162,7 +169,9 @@ want to simply use a database whose schema is contained within the remote databa
 One can specify the remote database that flask-eztest should reflect by setting the EZTEST_REFLECTED_DB_URI in the test config module
 
 i.e
+
 .. code:: python
+
     # test/config.py
     ...
     EZTEST_REFLECTED_DB_URI = 'mysql://..."
