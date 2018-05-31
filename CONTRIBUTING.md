@@ -4,12 +4,19 @@
 
 This is my first open source project that I am seriously undertaking. Go easy one me pls :)
 
-## Goals
+## Goal
 
 To make an easy to use / intuitive interface for creating automated UI tests for Flask applications
 
-One of the main ways this tool will make testing easy is by injecting identifiers into the html templates
-of the app that reflect the current schema of the webapps sql database
+## Ideas going forward
 
-Overall I believe the selenium webdriver's tools can be combined with python unittest assert statements to
-make a dead simple abstraction for testing UI elements using identifiers that are generated from the database model
+- Add support for command line args that can specify exactly which suite to run or maybe even picking out a
+specific test case to run
+
+- Add in watcher support so that a developer can tie a suite to a module or collection of modules in their
+flask app that are responsible for rendering pages tested by that suite and then have the suite run when
+changes are detected in those modules.
+
+## How to contribute
+
+I accept any pull requests or issues into consideration on GitHub
