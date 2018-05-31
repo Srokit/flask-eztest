@@ -24,8 +24,6 @@ class EZTestCase(TestCase):
         self.expected_models = dict()
 
     def setUp(self):
-        # self.driver = self.eztest.driver
-        # self.driver.implicitly_wait(self.wait_time)
         self.page = capybara.dsl.page
         self.driver = self.page.driver.browser
         self.driver.implicitly_wait(self.wait_time)
