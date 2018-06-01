@@ -1,6 +1,6 @@
 import threading
 import warnings
-from unittest import TextTestRunner
+from unittest import TextTestRunner, makeSuite
 import json
 import tempfile
 import os
@@ -80,7 +80,7 @@ class EZTest(object):
 
         self.db.init_app(self.app)
 
-    def run(self):
+    def run(self, suite_name=None, testcase_name=None):
 
         def run_app(app):
             from werkzeug.serving import run_simple
@@ -93,8 +93,18 @@ class EZTest(object):
         runner = TextTestRunner()
 
         for suite in self.testsuites:
-            suite.init_test_instances(self)
-            runner.run(suite)
+            if suite_name is None or suite.name == suite_name:
+
+                if testcase_name is not None:
+                    testcase = self.get_runnable_testcase_with_name_from_suite(testcase_name, suite)
+                    if testcase is None:
+                        return
+                    print "Running testcase %s.%s" % (suite_name, testcase_name)
+                    runner.run(testcase)
+                    break
+                else:
+                    suite.init_test_instances(self)
+                    runner.run(suite)
 
         self.remove_db_file()
         # Note when we come out of this function the main thread must call sys.exit(0) for flask app to stop running
@@ -166,3 +176,8 @@ class EZTest(object):
             self.db.engine.execute(q)
         else:
             self.db.session.add(self.model_clases[model_name](**row))
+
+    def get_runnable_testcase_with_name_from_suite(self, name, suite):
+        for tc_class in suite.test_classes:
+            if tc_class.__name__ == name:
+                return tc_class(self)

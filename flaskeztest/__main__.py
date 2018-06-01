@@ -38,11 +38,35 @@ def flaskeztest_main():
     eztest = EZTest()
     eztest.init_with_app_and_db(app, db)
 
+    suite_name, testcase_name = parse_cmdline_args()
+
     # Start up flask app and run our tests against it
-    eztest.run()
+    eztest.run(suite_name, testcase_name)
 
     # To terminate the flask app thread started in eztest.run()
     sys.exit(0)
+
+
+def parse_cmdline_args():
+
+    suite_name = None
+    testcase_name = None
+
+    if len(sys.argv) == 1:
+        # Run all tests
+        pass
+    elif len(sys.argv) == 2:
+        # Run suite specific
+        suite_name = sys.argv[1]
+    elif len(sys.argv) == 3:
+        # Run test case specific
+        suite_name = sys.argv[1]
+        testcase_name = sys.argv[2]
+    else:
+        print "Error: Too many args"
+        sys.exit(1)
+
+    return suite_name, testcase_name
 
 
 if __name__ == '__main__':
