@@ -40,6 +40,7 @@ Other options
 for running one testcase under a suite
 
 .. code::
+
     $ eztest [suite] [testcase]
 
 or
@@ -47,6 +48,7 @@ or
 for running one whole suite
 
 .. code::
+
     $ eztest [suite]
 
 where suite is the same as a suite module without .py and testcase is the same as the classname of the testcase
@@ -57,6 +59,7 @@ as EZTEST_CONFIG_MODULE
 i.e:
 
 .. code:: python
+
     # test/config.py
 
     EZTEST_FIXTURES_DIR = 'test/fixtures'
