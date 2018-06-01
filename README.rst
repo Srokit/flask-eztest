@@ -34,6 +34,21 @@ Then run all test suites with eztest command
 .. code::
     $ eztest
 
+Other options
+~~~~~~~~~~~~~
+
+for running one testcase under a suite
+.. code::
+    $ eztest [suite] [testcase]
+
+or
+
+for running one whole suite
+.. code::
+    $ eztest [suite]
+
+where suite is the same as a suite module without .py and testcase is the same as the classname of the testcase
+
 In General, the eztest object get's its settings from a special test config module which is set in app.config
 as EZTEST_CONFIG_MODULE
 
@@ -44,6 +59,14 @@ i.e:
 
     EZTEST_FIXTURES_DIR = 'test/fixtures'
     EZTEST_SUITES_PACKAGE = 'test/suites'
+
+Make sure that the suites package has a ```suite_names``` list in its __init__.py'
+
+.. code:: python
+    # suites/__init__.py
+    suite_names = ['index']
+
+And then in normal config module
 
 .. code:: python
     # config.py
