@@ -38,12 +38,14 @@ Other options
 ~~~~~~~~~~~~~
 
 for running one testcase under a suite
+
 .. code::
     $ eztest [suite] [testcase]
 
 or
 
 for running one whole suite
+
 .. code::
     $ eztest [suite]
 
