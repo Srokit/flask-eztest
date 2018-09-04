@@ -1,9 +1,7 @@
 
 import os
 import sys
-
-from sqlalchemy.dialects.mysql import BIT, INTEGER
-
+from sqlalchemy.dialects.mysql import BIT, INTEGER,TINYINT
 
 def parse_module_name_from_filepath(filepath):
     """
@@ -12,7 +10,6 @@ def parse_module_name_from_filepath(filepath):
     :type filepath: str
     """
     path = os.path.realpath(filepath)
-
     if os.path.splitext(path)[1] == '.py':
         path = os.path.splitext(path)[0]
 
@@ -31,7 +28,6 @@ def parse_module_name_from_filepath(filepath):
 
     if sys.path[0] != path:
         sys.path.insert(0, path)
-
     return '.'.join(module_name[::-1])
 
 
@@ -39,7 +35,7 @@ def convert_sql_table_to_sqlite_table(table):
     for column in table.columns:
         column.nullable = True
         column.unique = False
-        if type(column.type) is BIT:
+        if type(column.type) in [BIT,TINYINT]:
             column.type = INTEGER()
         if getattr(column.type, 'collation', None) is not None:
             column.type = type(column.type)(length=column.type.length)
